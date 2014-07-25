@@ -212,8 +212,8 @@ function casearch (buf, pkt, t, hlen, msglen, dcount)
       tp2:add_expert_info(PI_MALFORMED, PI_ERROR, "CID mismatch")
     end
     t:add(fpv, buf(hlen,msglen))
-    pvname=buf(hlen,msglen):string()
-    pkt.cols.info:append("Search('"..pvname.."',"..buf(8,4):uint().."), ")
+    pkt.cols.info:append("Search('"..buf(hlen,msglen):string())
+    pkt.cols.info:append("',"..buf(8,4):uint().."), ")
   end
   return dir
 end
