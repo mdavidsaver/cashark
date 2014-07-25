@@ -21,12 +21,15 @@ local bcommands = {
   [6] = "Search",
   [0x0b] = "Error",
   [0x0c] = "Clear Channel",
+  [0x0d] = "Beacon",
   [0x0f] = "Read Notify",
+  [0x11] = "Repeater Confirm",
   [0x12] = "Create Channel",
   [0x13] = "Write Notify",
   [0x14] = "User",
   [0x15] = "Host",
   [0x16] = "Rights",
+  [0x18] = "Repeater Register",
   [0x1a] = "Create Channel Fail",
   [0x1b] = "Server Disconnect"
 }
