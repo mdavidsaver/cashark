@@ -1,7 +1,7 @@
 Wireshark disector plugin for Channel Access protocol
 ==============================================================
 
-Tested with wireshark 1.2.11 and 1.8.2.
+Tested with wireshark 1.2.11, 1.8.2, and 1.10.8.
 
 Using
 -----
@@ -32,12 +32,14 @@ Bug reports are welcome (and patches more so).
 Send to "Michael Davidsaver" <mdavidsaver@bnl.gov>
 or open a github issue.
 
+If possible, please include a packet capture file which will trigger the error.
+
 https://github.com/mdavidsaver/cashark
 
 Setup
 -----
 
-To automatically load the CA disector without the -X argument.
+To automatically load the CA disector *instead* of using the -X argument.
 
 Edit /etc/wireshark/init.lua and remove or comment out the line about
 disabling LUA support ("disable_lua = true").  Also, you may need
