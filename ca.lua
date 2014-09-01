@@ -98,6 +98,53 @@ local ecacodes = {
   [0x1e0] = "ECA_UNRESPTMO"
 }
 
+local dbrcodes = {
+  [0] = "STRING",
+  [1] = "INT",
+  [1] = "SHORT",
+  [2] = "FLOAT",
+  [3] = "ENUM",
+  [4] = "CHAR",
+  [5] = "LONG",
+  [6] = "DOUBLE",
+  [7] = "STS_STRING",
+  [8] = "STS_INT",
+  [8] = "STS_SHORT",
+  [9] = "STS_FLOAT",
+  [10] = "STS_ENUM",
+  [11] = "STS_CHAR",
+  [12] = "STS_LONG",
+  [13] = "STS_DOUBLE",
+  [14] = "TIME_STRING",
+  [15] = "TIME_INT",
+  [15] = "TIME_SHORT",
+  [16] = "TIME_FLOAT",
+  [17] = "TIME_ENUM",
+  [18] = "TIME_CHAR",
+  [19] = "TIME_LONG",
+  [20] = "TIME_DOUBLE",
+  [21] = "GR_STRING",
+  [22] = "GR_INT",
+  [22] = "GR_SHORT",
+  [23] = "GR_FLOAT",
+  [24] = "GR_ENUM",
+  [25] = "GR_CHAR",
+  [26] = "GR_LONG",
+  [27] = "GR_DOUBLE",
+  [28] = "CTRL_STRING",
+  [29] = "CTRL_INT",
+  [29] = "CTRL_SHORT",
+  [30] = "CTRL_FLOAT",
+  [31] = "CTRL_ENUM",
+  [32] = "CTRL_CHAR",
+  [33] = "CTRL_LONG",
+  [34] = "CTRL_DOUBLE",
+  [35] = "PUT_ACKT",
+  [36] = "PUT_ACKS",
+  [37] = "STSACK_STRING",
+  [38] = "CLASS_NAME"
+}
+
 local fcmd  = ProtoField.uint16("ca.command", "Command", base.HEX, bcommands)
 local fsize = ProtoField.uint32("ca.size", "Payload Size")
 
@@ -114,7 +161,7 @@ local fport = ProtoField.uint16("ca.serv.port", "Server Port")
 local brep  = { [0xa] = "Success or failure", [0x5] = "Only for Success" }
 local frep  = ProtoField.uint16("ca.doreply", "Reply", base.HEX, brep)
 local fver  = ProtoField.uint16("ca.version", "Version")
-local fdtype= ProtoField.uint16("ca.dtype", "DBR Type")
+local fdtype= ProtoField.uint16("ca.dtype", "DBR Type", base.DEC, dbrcodes)
 local fcid  = ProtoField.uint32("ca.cid", "Client Channel ID")
 local fsid  = ProtoField.uint32("ca.sid", "Server Channel ID")
 local fioid = ProtoField.uint32("ca.ioid", "Operation ID")
