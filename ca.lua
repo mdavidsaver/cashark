@@ -64,9 +64,6 @@ ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
 
 local specials
 
-local cac="Cli"
-local cas="Srv"
-
 function decodeheader(buf)
   local msglen = buf(2,2)
   local dcount = buf(6,2)
@@ -82,6 +79,9 @@ function decodeheader(buf)
   return msglen, dcount, hlen
 end
 
+-- Decode a single CA message
+-- returns number of bytes consumed or a negative number giving
+-- the number of bytes needed to complete the message
 function decode (buf, pkt, root)
   if buf:len()<16 then return 0 end
     
@@ -108,31 +108,34 @@ function decode (buf, pkt, root)
   spec=specials[cmd]
   if spec
   then
-    return hlen+msglen:uint(), spec(buf, pkt, t, hlen, msglen:uint(), dcount)
-  end
-
-  cmd_name = bcommands[cmd]
-  if cmd_name
-  then
-    pkt.cols.info:append(cmd_name..", ")
+    -- use specialized decoder
+    spec(buf, pkt, t, hlen, msglen:uint(), dcount)
+    msglen=msglen:uint()
   else
-    pkt.cols.info:append("Msg: "..cmd.." ")
-  end
+    -- generic decode
+    cmd_name = bcommands[cmd]
+    if cmd_name
+    then
+      pkt.cols.info:append(cmd_name..", ")
+    else
+      pkt.cols.info:append("Msg: "..cmd.." ")
+    end
 
-  t:add(ftype,buf(4,2))
-  t:add(fcnt, dcount)
-  t:add(fp1 , buf(8,4))
-  t:add(fp2 , buf(12,4))
+    t:add(ftype,buf(4,2))
+    t:add(fcnt, dcount)
+    t:add(fp1 , buf(8,4))
+    t:add(fp2 , buf(12,4))
   
-  msglen=msglen:uint()
-  dcount=dcount:uint()
+    msglen=msglen:uint()
+    dcount=dcount:uint()
 
-  if msglen>0
-  then
-    t:add(fdata, buf(hlen,msglen))      
+    if msglen>0
+    then
+      t:add(fdata, buf(hlen,msglen))      
+    end
   end
   
-  return hlen+msglen, nil
+  return hlen+msglen
 end
 
 function ca.dissector (buf, pkt, root)
@@ -140,7 +143,6 @@ function ca.dissector (buf, pkt, root)
   pkt.cols.protocol = ca.name
   pkt.cols.info:clear()
 
-  local dir=nil
   local origbuf = buf
   local totalconsumed = 0
 
@@ -150,9 +152,7 @@ function ca.dissector (buf, pkt, root)
   do
     local pdir
     local consumed
-    consumed, pdir = decode(buf,pkt,root)
-    --print(pkt.number.." "..(pdir or "nil"))
-    if pdir then dir=pdir end
+    consumed = decode(buf,pkt,root)
     --print("Consumed "..consumed)
 
     if consumed<0
@@ -175,13 +175,6 @@ function ca.dissector (buf, pkt, root)
       buf=buf(consumed):tvb()
     end
   end
-
-  if dir
-  then
-    pkt.cols.info:preppend(dir.." ")
-  else
-    pkt.cols.info:preppend(pkt.src_port.." > "..pkt.dst_port.." ")
-  end
 end
 
 local utbl = DissectorTable.get("udp.port")
@@ -191,18 +184,16 @@ local ttbl = DissectorTable.get("tcp.port")
 ttbl:add(5064, ca)
 
 function casearch (buf, pkt, t, hlen, msglen, dcount)
-  local dir
-
   if msglen==8 and buf(hlen,1):uint()==0
   then
-    dir=cas
+    -- server message
     t:add(fport, buf(4,2))
     t:add(fserv , buf(8,4))
     t:add(fcid , buf(12,4))
     t:add(fver, buf(hlen+2,2))
     pkt.cols.info:append("Search Reply("..buf(12,4):uint().."), ")
   else
-    dir=cac
+    -- client message
     t:add(frep, buf(4,2))
     t:add(fver, dcount)
     t:add(fcid, buf(8,4))
@@ -215,21 +206,19 @@ function casearch (buf, pkt, t, hlen, msglen, dcount)
     pkt.cols.info:append("Search('"..buf(hlen,msglen):string())
     pkt.cols.info:append("',"..buf(8,4):uint().."), ")
   end
-  return dir
 end
 
 function cacreatechan (buf, pkt, t, hlen, msglen, dcount)
-  local dir
   if msglen==0
   then
-    dir=cas
+    -- server message
     t:add(fdtype,buf(4,2))
     t:add(fcnt, dcount)
     t:add(fcid , buf(8,4))
     t:add(fsid , buf(12,4))
     pkt.cols.info:append("Create Reply("..buf(8,4):uint()..", "..buf(12,4):uint().."), ")
   else
-    dir=cac
+    -- client message
     t:add(fcid , buf(8,4))
     t:add(fver , buf(12,4))
     t:add(fpv, buf(hlen,msglen))
@@ -263,8 +252,6 @@ function caerror (buf, pkt, t, hlen, msglen, dcount)
   t:add(fmsg, buf(16+ehlen))
 
   pkt.cols.info:append("Error("..buf(16+ehlen):string()..")")
-
-  return cas
 end
 
 -- Specialized decoders for some message types
