@@ -234,7 +234,8 @@ function cacreatechan (buf, pkt, t, hlen, msglen, dcount)
     t:add(fver , buf(12,4))
     t:add(fpv, buf(hlen,msglen))
     pvname=buf(hlen,msglen):string()
-    pkt.cols.info:append("Create Request('"..pvname.."',"..buf(8,4):uint().."), ")
+    pkt.cols.info:append("Create Request('"..pvname)
+    pkt.cols.info:append("',"..buf(8,4):uint().."), ")
   end
   return dir
 end
