@@ -34,6 +34,70 @@ local bcommands = {
   [0x1b] = "Server Disconnect"
 }
 
+local ecacodes = {
+  [0x001] = "ECA_NORMAL",
+  [0x00a] = "ECA_MAXIOC",
+  [0x012] = "ECA_UKNHOST",
+  [0x01a] = "ECA_UKNSERV",
+  [0x022] = "ECA_SOCK",
+  [0x028] = "ECA_CONN",
+  [0x030] = "ECA_ALLOCMEM",
+  [0x038] = "ECA_UKNCHAN",
+  [0x040] = "ECA_UKNFIELD",
+  [0x048] = "ECA_TOLARGE",
+  [0x050] = "ECA_TIMEOUT",
+  [0x058] = "ECA_NOSUPPORT",
+  [0x060] = "ECA_STRTOBIG",
+  [0x06a] = "ECA_DISCONNCHID",
+  [0x072] = "ECA_BADTYPE",
+  [0x07b] = "ECA_CHIDNOTFND",
+  [0x083] = "ECA_CHIDRETRY",
+  [0x08e] = "ECA_INTERNAL",
+  [0x090] = "ECA_DBLCLFAIL",
+  [0x098] = "ECA_GETFAIL",
+  [0x0a0] = "ECA_PUTFAIL",
+  [0x0a8] = "ECA_ADDFAIL",
+  [0x0b0] = "ECA_BADCOUNT",
+  [0x0ba] = "ECA_BADSTR",
+  [0x0c0] = "ECA_DISCONN",
+  [0x0c8] = "ECA_DBLCHNL",
+  [0x0d2] = "ECA_EVDISALLOW",
+  [0x0d8] = "ECA_BUILDGET",
+  [0x0e0] = "ECA_NEEDSFP",
+  [0x0e8] = "ECA_OVEVFAIL",
+  [0x0f2] = "ECA_BADMONID",
+  [0x0f8] = "ECA_NEWADDR",
+  [0x103] = "ECA_NEWCONN",
+  [0x108] = "ECA_NOCACTX",
+  [0x116] = "ECA_DEFUNCT",
+  [0x118] = "ECA_EMPTYSTR",
+  [0x120] = "ECA_NOREPEATER",
+  [0x128] = "ECA_NOCHANMSG",
+  [0x130] = "ECA_DLCKREST",
+  [0x138] = "ECA_SERVBEHIND",
+  [0x140] = "ECA_NOCAST",
+  [0x14a] = "ECA_BADMASK",
+  [0x153] = "ECA_IODONE",
+  [0x15b] = "ECA_IOINPROGRESS",
+  [0x162] = "ECA_BADSYNCGRP",
+  [0x16a] = "ECA_PUTCBINPROG",
+  [0x170] = "ECA_NORDACCESS",
+  [0x178] = "ECA_NOWTACCESS",
+  [0x182] = "ECA_ANACHRONISM",
+  [0x188] = "ECA_NOSEARCHADDR",
+  [0x190] = "ECA_NOCONVERT",
+  [0x19a] = "ECA_BADCHID",
+  [0x1a2] = "ECA_BADFUNCPTR",
+  [0x1a8] = "ECA_ISATTACHED",
+  [0x1b0] = "ECA_UNAVAILINSERV",
+  [0x1b8] = "ECA_CHANDESTROY",
+  [0x1c2] = "ECA_BADPRIORITY",
+  [0x1ca] = "ECA_NOTTHREADED",
+  [0x1d0] = "ECA_16KARRAYCLIENT",
+  [0x1d8] = "ECA_CONNSEQTMO",
+  [0x1e0] = "ECA_UNRESPTMO"
+}
+
 local fcmd  = ProtoField.uint16("ca.command", "Command", base.HEX, bcommands)
 local fsize = ProtoField.uint32("ca.size", "Payload Size")
 
@@ -51,16 +115,17 @@ local brep  = { [0xa] = "Success or failure", [0x5] = "Only for Success" }
 local frep  = ProtoField.uint16("ca.doreply", "Reply", base.HEX, brep)
 local fver  = ProtoField.uint16("ca.version", "Version")
 local fdtype= ProtoField.uint16("ca.dtype", "DBR Type")
-local fcid  = ProtoField.uint32("ca.cid", "Client Channel ID", base.HEX)
-local fsid  = ProtoField.uint32("ca.sid", "Server Channel ID", base.HEX)
-local fioid = ProtoField.uint32("ca.ioid", "Client Operation ID", base.HEX)
+local fcid  = ProtoField.uint32("ca.cid", "Client Channel ID")
+local fsid  = ProtoField.uint32("ca.sid", "Server Channel ID")
+local fioid = ProtoField.uint32("ca.ioid", "Operation ID")
+local fsub  = ProtoField.uint32("ca.sub", "Subscription ID")
 local fdbr  = ProtoField.bytes ("ca.dbr", "DBR Data")
 local fpv   = ProtoField.string("ca.pv", "PV Name")
-local feca  = ProtoField.uint32("ca.eca", "Status", base.HEX)
+local feca  = ProtoField.uint32("ca.eca", "Status", base.HEX, ecacodes)
 local fmsg  = ProtoField.string("ca.error", "Error Message")
 
 ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
-       fdbr, fpv, fserv, fport, frep, fver, fdtype, fcid, fsid, fioid,
+       fdbr, fpv, fserv, fport, frep, fver, fdtype, fcid, fsid, fioid, fsub,
        feca, fmsg}
 
 local specials
@@ -274,12 +339,46 @@ function cawrite (buf, pkt, t, hlen, msglen, dcount)
   pkt.cols.info:append("Write(ioid="..buf(12,4):uint().."), ")
 end
 
+function caevent (buf, pkt, t, hlen, msglen, dcount)
+  t:add(fdtype,buf(4,2))
+  t:add(fcnt, dcount)
+  t:add(fsub, buf(12,4))
+  if msglen==16
+  then
+    if buf(16,4):uint()==0 and buf(20,4):uint()==0 and buf(24,4):uint()==0
+    then
+      -- ok, so *probably* a new subscription...
+      t:add(fsid , buf(8,4))
+      pkt.cols.info:append("Event Add(sid="..buf(8,4):uint()..", sub="..buf(12,4):uint().."), ")
+      return
+    end
+  end
+  -- a data update
+  t:add(feca , buf(8,4))
+  if msglen==0
+  then
+    -- the last monitor update after subscription cancel
+    pkt.cols.info:append("Event Final(sub="..buf(12,4):uint().."), ")
+  else
+    t:add(fdata, buf(hlen,msglen))
+    pkt.cols.info:append("Event(sub="..buf(12,4):uint().."), ")
+  end
+end
+
+function caeventcancel (buf, pkt, t, hlen, msglen, dcount)
+  t:add(fdtype,buf(4,2))
+  t:add(fcnt, dcount)
+  t:add(fsid , buf(8,4))
+  t:add(fsub, buf(12,4))
+  pkt.cols.info:append("Event Cancel(sid="..buf(8,4):uint()..", sub="..buf(12,4):uint().."), ")
+end
+
 function caerror (buf, pkt, t, hlen, msglen, dcount)
 
   t:add(ftype,buf(4,2))
   t:add(fcnt, dcount)
   t:add(fcid, buf(8,4))
-  informeca(t, buf(12,4))
+  t:add(feca, buf(12,4))
 
   emsglen, edcount, ehlen = decodeheader(buf(16):tvb())
 
@@ -301,6 +400,8 @@ end
 
 -- Specialized decoders for some message types
 specials = {
+ [1] = caevent,
+ [2] = caeventcancel,
  [4] = cawrite,
  [6] = casearch,
  [0x0b] = caerror,
@@ -308,79 +409,5 @@ specials = {
  [0x12] = cacreatechan,
  [0x13] = cawritenotify
 }
-
--- awk -F '[ (),]+' '/define.*ECA/{printf " [%d] = \"%s\",\n", $5, $2}' caerr.h
-ecamsg = {
- [0] = "ECA_NORMAL",
- [1] = "ECA_MAXIOC",
- [2] = "ECA_UKNHOST",
- [3] = "ECA_UKNSERV",
- [4] = "ECA_SOCK",
- [5] = "ECA_CONN",
- [6] = "ECA_ALLOCMEM",
- [7] = "ECA_UKNCHAN",
- [8] = "ECA_UKNFIELD",
- [9] = "ECA_TOLARGE",
- [10] = "ECA_TIMEOUT",
- [11] = "ECA_NOSUPPORT",
- [12] = "ECA_STRTOBIG",
- [13] = "ECA_DISCONNCHID",
- [14] = "ECA_BADTYPE",
- [15] = "ECA_CHIDNOTFND",
- [16] = "ECA_CHIDRETRY",
- [17] = "ECA_INTERNAL",
- [18] = "ECA_DBLCLFAIL",
- [19] = "ECA_GETFAIL",
- [20] = "ECA_PUTFAIL",
- [21] = "ECA_ADDFAIL",
- [22] = "ECA_BADCOUNT",
- [23] = "ECA_BADSTR",
- [24] = "ECA_DISCONN",
- [25] = "ECA_DBLCHNL",
- [26] = "ECA_EVDISALLOW",
- [27] = "ECA_BUILDGET",
- [28] = "ECA_NEEDSFP",
- [29] = "ECA_OVEVFAIL",
- [30] = "ECA_BADMONID",
- [31] = "ECA_NEWADDR",
- [32] = "ECA_NEWCONN",
- [33] = "ECA_NOCACTX",
- [34] = "ECA_DEFUNCT",
- [35] = "ECA_EMPTYSTR",
- [36] = "ECA_NOREPEATER",
- [37] = "ECA_NOCHANMSG",
- [38] = "ECA_DLCKREST",
- [39] = "ECA_SERVBEHIND",
- [40] = "ECA_NOCAST",
- [41] = "ECA_BADMASK",
- [42] = "ECA_IODONE",
- [43] = "ECA_IOINPROGRESS",
- [44] = "ECA_BADSYNCGRP",
- [45] = "ECA_PUTCBINPROG",
- [46] = "ECA_NORDACCESS",
- [47] = "ECA_NOWTACCESS",
- [48] = "ECA_ANACHRONISM",
- [49] = "ECA_NOSEARCHADDR",
- [50] = "ECA_NOCONVERT",
- [51] = "ECA_BADCHID",
- [52] = "ECA_BADFUNCPTR",
- [53] = "ECA_ISATTACHED",
- [54] = "ECA_UNAVAILINSERV",
- [55] = "ECA_CHANDESTROY",
- [56] = "ECA_BADPRIORITY",
- [57] = "ECA_NOTTHREADED",
- [58] = "ECA_16KARRAYCLIENT",
- [59] = "ECA_CONNSEQTMO",
- [60] = "ECA_UNRESPTMO"
-}
-
-function informeca (t, buf)
-    local teca = t:add(feca, buf)
-    local msg = ecamsg[math.floor(buf:uint()/8)] -- buf>>3
-    if msg
-    then
-      teca:add_expert_info(PI_RESPONSE_CODE, PI_NOTE, msg)
-    end
-end
 
 print("Load CA")
