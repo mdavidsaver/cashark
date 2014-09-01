@@ -53,13 +53,14 @@ local fver  = ProtoField.uint16("ca.version", "Version")
 local fdtype= ProtoField.uint16("ca.dtype", "DBR Type")
 local fcid  = ProtoField.uint32("ca.cid", "Client Channel ID", base.HEX)
 local fsid  = ProtoField.uint32("ca.sid", "Server Channel ID", base.HEX)
+local fioid = ProtoField.uint32("ca.ioid", "Client Operation ID", base.HEX)
 local fdbr  = ProtoField.bytes ("ca.dbr", "DBR Data")
 local fpv   = ProtoField.string("ca.pv", "PV Name")
-local feca  = ProtoField.uint32("ca.eca", "CA Error Code", base.HEX)
+local feca  = ProtoField.uint32("ca.eca", "Status", base.HEX)
 local fmsg  = ProtoField.string("ca.error", "Error Message")
 
 ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
-       fdbr, fpv, fserv, fport, frep, fver, fdtype, fcid, fsid,
+       fdbr, fpv, fserv, fport, frep, fver, fdtype, fcid, fsid, fioid,
        feca, fmsg}
 
 local specials
@@ -216,7 +217,7 @@ function cacreatechan (buf, pkt, t, hlen, msglen, dcount)
     t:add(fcnt, dcount)
     t:add(fcid , buf(8,4))
     t:add(fsid , buf(12,4))
-    pkt.cols.info:append("Create Reply("..buf(8,4):uint()..", "..buf(12,4):uint().."), ")
+    pkt.cols.info:append("Create Reply(cid="..buf(8,4):uint()..", sid="..buf(12,4):uint().."), ")
   else
     -- client message
     t:add(fcid , buf(8,4))
@@ -224,9 +225,53 @@ function cacreatechan (buf, pkt, t, hlen, msglen, dcount)
     t:add(fpv, buf(hlen,msglen))
     pvname=buf(hlen,msglen):string()
     pkt.cols.info:append("Create Request('"..pvname)
-    pkt.cols.info:append("',"..buf(8,4):uint().."), ")
+    pkt.cols.info:append("', cid="..buf(8,4):uint().."), ")
   end
   return dir
+end
+
+function careadnotify (buf, pkt, t, hlen, msglen, dcount)
+  t:add(fdtype,buf(4,2))
+  t:add(fcnt, dcount)
+  t:add(fioid, buf(12,4))
+  if msglen==0 and dcount~=0
+  then
+    -- client message (request)
+    t:add(fsid , buf(8,4))
+    pkt.cols.info:append("Read Request(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
+  else
+    -- server message (reply)
+    t:add(feca , buf(8,4))
+    t:add(fdata, buf(hlen,msglen))
+    pkt.cols.info:append("Read Reply(ioid="..buf(12,4):uint().."), ")
+  end
+end
+
+function cawritenotify (buf, pkt, t, hlen, msglen, dcount)
+  t:add(fdtype,buf(4,2))
+  t:add(fcnt, dcount)
+  t:add(fioid, buf(12,4))
+  if msglen==0 and dcount~=0
+  then
+    -- server message (reply)
+    t:add(feca , buf(8,4))
+    pkt.cols.info:append("Write Reply(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
+  else
+    -- client message (request)
+    t:add(fsid , buf(8,4))
+    t:add(fdata, buf(hlen,msglen))
+    pkt.cols.info:append("Write Request(ioid="..buf(12,4):uint().."), ")
+  end
+end
+
+function cawrite (buf, pkt, t, hlen, msglen, dcount)
+  -- client message (request)
+  t:add(fdtype,buf(4,2))
+  t:add(fcnt, dcount)
+  t:add(fioid, buf(12,4))
+  t:add(fsid , buf(8,4))
+  t:add(fdata, buf(hlen,msglen))
+  pkt.cols.info:append("Write(ioid="..buf(12,4):uint().."), ")
 end
 
 function caerror (buf, pkt, t, hlen, msglen, dcount)
@@ -256,9 +301,12 @@ end
 
 -- Specialized decoders for some message types
 specials = {
+ [4] = cawrite,
  [6] = casearch,
  [0x0b] = caerror,
- [0x12] = cacreatechan
+ [0x0f] = careadnotify,
+ [0x12] = cacreatechan,
+ [0x13] = cawritenotify
 }
 
 -- awk -F '[ (),]+' '/define.*ECA/{printf " [%d] = \"%s\",\n", $5, $2}' caerr.h
