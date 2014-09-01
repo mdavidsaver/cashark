@@ -59,7 +59,7 @@ local feca  = ProtoField.uint32("ca.eca", "CA Error Code", base.HEX)
 local fmsg  = ProtoField.string("ca.error", "Error Message")
 
 ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
-       fdbr, fpv, fserv, fport, frep, fver, fcid, fsid,
+       fdbr, fpv, fserv, fport, frep, fver, fdtype, fcid, fsid,
        feca, fmsg}
 
 local specials
