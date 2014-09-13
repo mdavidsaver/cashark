@@ -208,7 +208,7 @@ function decode (buf, pkt, root)
   
   if buf:len()<hlen+msglen:uint()
   then
-    return (buf:len()-(hlen+msglen:uint())), nil
+    return (buf:len()-(hlen+msglen:uint()))
   end
 
   t = root:add(ca, buf(0,hlen+msglen:uint()))
