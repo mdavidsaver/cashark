@@ -10,6 +10,7 @@
 --
 -- Revision $Id$
 
+print("Loading CA...")
 
 ca = Proto("ca", "Channel Access")
 
@@ -457,4 +458,4 @@ specials = {
  [0x13] = cawritenotify
 }
 
-print("Load CA")
+print("Loaded CA")
