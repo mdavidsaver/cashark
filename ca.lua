@@ -3,12 +3,12 @@
 --
 -- https://github.com/mdavidsaver/cashark
 --
--- Copyright 2012 Michael Davidsaver
+-- Copyright 2014 Michael Davidsaver
 --
 -- Distribution and use subject to the EPICS Open License
 -- See the file LICENSE
 --
--- Revision 20130807
+-- Revision $Id$
 
 
 ca = Proto("ca", "Channel Access")
