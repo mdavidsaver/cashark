@@ -3,7 +3,7 @@
 --
 -- https://github.com/mdavidsaver/cashark
 --
--- Copyright 2014 Michael Davidsaver
+-- Copyright 2015 Michael Davidsaver
 --
 -- Distribution and use subject to the EPICS Open License
 -- See the file LICENSE
@@ -169,12 +169,13 @@ local fioid = ProtoField.uint32("ca.ioid", "Operation ID")
 local fsub  = ProtoField.uint32("ca.sub", "Subscription ID")
 local fdbr  = ProtoField.bytes ("ca.dbr", "DBR Data")
 local fpv   = ProtoField.string("ca.pv", "PV Name")
+local fbeac = ProtoField.uint16("ca.beacon", "Beacon number")
 local feca  = ProtoField.uint32("ca.eca", "Status", base.HEX, ecacodes)
 local fmsg  = ProtoField.string("ca.error", "Error Message")
 
 ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
        fdbr, fpv, fserv, fport, frep, fver, fdtype, fcid, fsid, fioid, fsub,
-       feca, fmsg}
+       fbeac, feca, fmsg}
 
 local specials
 
@@ -421,6 +422,14 @@ function caeventcancel (buf, pkt, t, hlen, msglen, dcount)
   pkt.cols.info:append("Event Cancel(sid="..buf(8,4):uint()..", sub="..buf(12,4):uint().."), ")
 end
 
+function cabeacon (buf, pkt, t, hlen, msglen, dcount)
+  t:add(fver,  buf(4,2))
+  t:add(fport, buf(6,2))
+  t:add(fbeac, buf(8,4))
+  t:add(fserv, buf(12,4))
+  pkt.cols.info:append("Beacon("..tostring(buf(12,4):ipv4())..":"..buf(6,2):uint()..", "..buf(8,4):uint().."), ")
+end
+
 function caerror (buf, pkt, t, hlen, msglen, dcount)
 
   t:add(ftype,buf(4,2))
@@ -453,6 +462,7 @@ specials = {
  [4] = cawrite,
  [6] = casearch,
  [0x0b] = caerror,
+ [0x0d] = cabeacon,
  [0x0f] = careadnotify,
  [0x12] = cacreatechan,
  [0x13] = cawritenotify
