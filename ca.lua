@@ -172,10 +172,11 @@ local fpv   = ProtoField.string("ca.pv", "PV Name")
 local fbeac = ProtoField.uint16("ca.beacon", "Beacon number")
 local feca  = ProtoField.uint32("ca.eca", "Status", base.HEX, ecacodes)
 local fmsg  = ProtoField.string("ca.error", "Error Message")
+local fstr  = ProtoField.string("ca.str", "Payload String")
 
 ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
        fdbr, fpv, fserv, fport, frep, fver, fdtype, fcid, fsid, fioid, fsub,
-       fbeac, feca, fmsg}
+       fbeac, feca, fmsg, fstr}
 
 local specials
 
@@ -298,6 +299,23 @@ utbl:add(5065, ca)
 local ttbl = DissectorTable.get("tcp.port")
 ttbl:add(5064, ca)
 
+function caversion (buf, pkt, t, hlen, msglen, dcount)
+  t:add(fver, buf(6,2))
+  pkt.cols.info:append("Version("..buf(6,2):uint().."), ")
+end
+
+function causer (buf, pkt, t, hlen, msglen, dcount)
+  t:add(fstr, buf(hlen,msglen))
+  pkt.cols.info:append("User('"..buf(hlen,msglen):string())
+  pkt.cols.info:append("), ")
+end
+
+function cahost (buf, pkt, t, hlen, msglen, dcount)
+  t:add(fstr, buf(hlen,msglen))
+  pkt.cols.info:append("Host('"..buf(hlen,msglen):string())
+  pkt.cols.info:append("), ")
+end
+
 function casearch (buf, pkt, t, hlen, msglen, dcount)
   if msglen==8 and buf(hlen,1):uint()==0
   then
@@ -342,6 +360,12 @@ function cacreatechan (buf, pkt, t, hlen, msglen, dcount)
     pkt.cols.info:append("', cid="..buf(8,4):uint().."), ")
   end
   return dir
+end
+
+function cacleanchan (buf, pkt, t, hlen, msglen, dcount)
+  t:add(fsid, buf(8,4))
+  t:add(fcid, buf(12,4))
+  pkt.cols.info:append("Clear Channel(cid="..buf(12,4):uint()..", sid="..buf(8,4):uint().."), ")
 end
 
 function careadnotify (buf, pkt, t, hlen, msglen, dcount)
@@ -457,15 +481,19 @@ end
 
 -- Specialized decoders for some message types
 specials = {
+ [0] = caversion,
  [1] = caevent,
  [2] = caeventcancel,
  [4] = cawrite,
  [6] = casearch,
  [0x0b] = caerror,
+ [0x0c] = cacleanchan,
  [0x0d] = cabeacon,
  [0x0f] = careadnotify,
  [0x12] = cacreatechan,
- [0x13] = cawritenotify
+ [0x13] = cawritenotify,
+ [0x14] = causer,
+ [0x15] = cahost
 }
 
 print("Loaded CA")
