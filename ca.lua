@@ -394,12 +394,12 @@ function cawritenotify (buf, pkt, t, hlen, msglen, dcount)
   then
     -- server message (reply)
     t:add(feca , buf(8,4))
-    pkt.cols.info:append("Write Reply(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
+    pkt.cols.info:append("Write Reply(ioid="..buf(12,4):uint().."), ")
   else
     -- client message (request)
     t:add(fsid , buf(8,4))
     t:add(fdata, buf(hlen,msglen))
-    pkt.cols.info:append("Write Request(ioid="..buf(12,4):uint().."), ")
+    pkt.cols.info:append("Write Request(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
   end
 end
 
@@ -410,7 +410,7 @@ function cawrite (buf, pkt, t, hlen, msglen, dcount)
   t:add(fioid, buf(12,4))
   t:add(fsid , buf(8,4))
   t:add(fdata, buf(hlen,msglen))
-  pkt.cols.info:append("Write(ioid="..buf(12,4):uint().."), ")
+  pkt.cols.info:append("Write(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
 end
 
 function caevent (buf, pkt, t, hlen, msglen, dcount)
