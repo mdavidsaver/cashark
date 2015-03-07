@@ -258,6 +258,7 @@ function ca.dissector (buf, pkt, root)
 
   pkt.cols.protocol = ca.name
   pkt.cols.info:clear()
+  pkt.cols.info:append(pkt.src_port.."->"..pkt.dst_port.." ")
 
   local origbuf = buf
   local totalconsumed = 0
