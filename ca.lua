@@ -146,6 +146,13 @@ local dbrcodes = {
   [38] = "CLASS_NAME"
 }
 
+local rights = {
+  [0] = "NA",
+  [1] = "RO",
+  [2] = "WO",
+  [3] = "RW"
+}
+
 local fcmd  = ProtoField.uint16("ca.command", "Command", base.HEX, bcommands)
 local fsize = ProtoField.uint32("ca.size", "Payload Size")
 
@@ -163,6 +170,7 @@ local brep  = { [0xa] = "Success or failure", [0x5] = "Only for Success" }
 local frep  = ProtoField.uint16("ca.doreply", "Reply", base.HEX, brep)
 local fver  = ProtoField.uint16("ca.version", "Version")
 local fdtype= ProtoField.uint16("ca.dtype", "DBR Type", base.DEC, dbrcodes)
+local fright= ProtoField.uint32("ca.rights", "Rights", base.HEX, rights)
 local fcid  = ProtoField.uint32("ca.cid", "Client Channel ID")
 local fsid  = ProtoField.uint32("ca.sid", "Server Channel ID")
 local fioid = ProtoField.uint32("ca.ioid", "Operation ID")
@@ -175,7 +183,7 @@ local fmsg  = ProtoField.string("ca.error", "Error Message")
 local fstr  = ProtoField.string("ca.str", "Payload String")
 
 ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
-       fdbr, fpv, fserv, fport, frep, fver, fdtype, fcid, fsid, fioid, fsub,
+       fdbr, fpv, fserv, fport, frep, fver, fdtype, fright, fcid, fsid, fioid, fsub,
        fbeac, feca, fmsg, fstr}
 
 local specials
@@ -363,6 +371,13 @@ function cacreatechan (buf, pkt, t, hlen, msglen, dcount)
   return dir
 end
 
+function carights (buf, pkt, t, hlen, msglen, dcount)
+  t:add(fcid , buf(8,4))
+  t:add(fright , buf(12,4))
+  local rt = rights[buf(12,4):uint()] or "??"
+  pkt.cols.info:append("Rights(cid="..buf(8,4):uint()..", "..rt.."), ")
+end
+
 function cacleanchan (buf, pkt, t, hlen, msglen, dcount)
   t:add(fsid, buf(8,4))
   t:add(fcid, buf(12,4))
@@ -494,7 +509,8 @@ specials = {
  [0x12] = cacreatechan,
  [0x13] = cawritenotify,
  [0x14] = causer,
- [0x15] = cahost
+ [0x15] = cahost,
+ [0x16] = carights
 }
 
 print("Loaded CA")
