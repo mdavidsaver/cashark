@@ -12,7 +12,7 @@
 
 print("Loading CA...")
 
-ca = Proto("ca", "Channel Access")
+local ca = Proto("ca", "Channel Access")
 
 local bcommands = {
   [0] = "Version",
@@ -199,7 +199,7 @@ ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
 
 local specials
 
-function decodeheader(buf)
+local function decodeheader(buf)
   local msglen = buf(2,2)
   local dcount = buf(6,2)
 
@@ -217,7 +217,7 @@ end
 -- Decode a single CA message
 -- returns number of bytes consumed or a negative number giving
 -- the number of bytes needed to complete the message
-function decode (buf, pkt, root)
+local function decode (buf, pkt, root)
   if buf:len()<16 then return 0 end
     
   local cmd = buf(0,2)
@@ -240,7 +240,7 @@ function decode (buf, pkt, root)
   
   cmd=cmd:uint()
 
-  spec=specials[cmd]
+  local spec=specials[cmd]
   if spec
   then
     -- use specialized decoder
@@ -248,7 +248,7 @@ function decode (buf, pkt, root)
     msglen=msglen:uint()
   else
     -- generic decode
-    cmd_name = bcommands[cmd]
+    local cmd_name = bcommands[cmd]
     if cmd_name
     then
       pkt.cols.info:append(cmd_name..", ")
@@ -319,24 +319,24 @@ utbl:add(5065, ca)
 local ttbl = DissectorTable.get("tcp.port")
 ttbl:add(5064, ca)
 
-function caversion (buf, pkt, t, hlen, msglen, dcount)
+local function caversion (buf, pkt, t, hlen, msglen, dcount)
   t:add(fver, buf(6,2))
   pkt.cols.info:append("Version("..buf(6,2):uint().."), ")
 end
 
-function causer (buf, pkt, t, hlen, msglen, dcount)
+local function causer (buf, pkt, t, hlen, msglen, dcount)
   t:add(fstr, buf(hlen,msglen))
   pkt.cols.info:append("User('"..buf(hlen,msglen):string())
   pkt.cols.info:append("), ")
 end
 
-function cahost (buf, pkt, t, hlen, msglen, dcount)
+local function cahost (buf, pkt, t, hlen, msglen, dcount)
   t:add(fstr, buf(hlen,msglen))
   pkt.cols.info:append("Host('"..buf(hlen,msglen):string())
   pkt.cols.info:append("), ")
 end
 
-function casearch (buf, pkt, t, hlen, msglen, dcount)
+local function casearch (buf, pkt, t, hlen, msglen, dcount)
   if msglen==8 and buf(hlen,1):uint()==0
   then
     -- server message
@@ -361,7 +361,7 @@ function casearch (buf, pkt, t, hlen, msglen, dcount)
   end
 end
 
-function cacreatechan (buf, pkt, t, hlen, msglen, dcount)
+local function cacreatechan (buf, pkt, t, hlen, msglen, dcount)
   if msglen==0
   then
     -- server message
@@ -382,20 +382,20 @@ function cacreatechan (buf, pkt, t, hlen, msglen, dcount)
   return dir
 end
 
-function carights (buf, pkt, t, hlen, msglen, dcount)
+local function carights (buf, pkt, t, hlen, msglen, dcount)
   t:add(fcid , buf(8,4))
   t:add(fright , buf(12,4))
   local rt = rights[buf(12,4):uint()] or "??"
   pkt.cols.info:append("Rights(cid="..buf(8,4):uint()..", "..rt.."), ")
 end
 
-function cacleanchan (buf, pkt, t, hlen, msglen, dcount)
+local function cacleanchan (buf, pkt, t, hlen, msglen, dcount)
   t:add(fsid, buf(8,4))
   t:add(fcid, buf(12,4))
   pkt.cols.info:append("Clear Channel(cid="..buf(12,4):uint()..", sid="..buf(8,4):uint().."), ")
 end
 
-function careadnotify (buf, pkt, t, hlen, msglen, dcount)
+local function careadnotify (buf, pkt, t, hlen, msglen, dcount)
   t:add(fdtype,buf(4,2))
   t:add(fcnt, dcount)
   t:add(fioid, buf(12,4))
@@ -412,7 +412,7 @@ function careadnotify (buf, pkt, t, hlen, msglen, dcount)
   end
 end
 
-function cawritenotify (buf, pkt, t, hlen, msglen, dcount)
+local function cawritenotify (buf, pkt, t, hlen, msglen, dcount)
   t:add(fdtype,buf(4,2))
   t:add(fcnt, dcount)
   t:add(fioid, buf(12,4))
@@ -429,7 +429,7 @@ function cawritenotify (buf, pkt, t, hlen, msglen, dcount)
   end
 end
 
-function cawrite (buf, pkt, t, hlen, msglen, dcount)
+local function cawrite (buf, pkt, t, hlen, msglen, dcount)
   -- client message (request)
   t:add(fdtype,buf(4,2))
   t:add(fcnt, dcount)
@@ -439,7 +439,7 @@ function cawrite (buf, pkt, t, hlen, msglen, dcount)
   pkt.cols.info:append("Write(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
 end
 
-function caevent (buf, pkt, t, hlen, msglen, dcount)
+local function caevent (buf, pkt, t, hlen, msglen, dcount)
   t:add(fdtype,buf(4,2))
   t:add(fcnt, dcount)
   t:add(fsub, buf(12,4))
@@ -470,7 +470,7 @@ function caevent (buf, pkt, t, hlen, msglen, dcount)
   end
 end
 
-function caeventcancel (buf, pkt, t, hlen, msglen, dcount)
+local function caeventcancel (buf, pkt, t, hlen, msglen, dcount)
   t:add(fdtype,buf(4,2))
   t:add(fcnt, dcount)
   t:add(fsid , buf(8,4))
@@ -478,7 +478,7 @@ function caeventcancel (buf, pkt, t, hlen, msglen, dcount)
   pkt.cols.info:append("Event Cancel(sid="..buf(8,4):uint()..", sub="..buf(12,4):uint().."), ")
 end
 
-function cabeacon (buf, pkt, t, hlen, msglen, dcount)
+local function cabeacon (buf, pkt, t, hlen, msglen, dcount)
   t:add(fver,  buf(4,2))
   t:add(fport, buf(6,2))
   t:add(fbeac, buf(8,4))
@@ -486,7 +486,7 @@ function cabeacon (buf, pkt, t, hlen, msglen, dcount)
   pkt.cols.info:append("Beacon("..tostring(buf(12,4):ipv4())..":"..buf(6,2):uint()..", "..buf(8,4):uint().."), ")
 end
 
-function caerror (buf, pkt, t, hlen, msglen, dcount)
+local function caerror (buf, pkt, t, hlen, msglen, dcount)
 
   t:add(ftype,buf(4,2))
   t:add(fcnt, dcount)
