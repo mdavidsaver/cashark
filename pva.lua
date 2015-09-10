@@ -178,9 +178,7 @@ function pva.dissector (buf, pkt, root)
 
   while buf:len()>0
   do
-    local pdir
-    local consumed
-    consumed = decode(buf,pkt,root)
+    local consumed = decode(buf,pkt,root)
     --print("Consumed "..consumed)
 
     if consumed<0
