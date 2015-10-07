@@ -28,7 +28,7 @@ Reporting bugs
 
 Bug reports are welcome (and patches more so).
 
-Send to "Michael Davidsaver" <mdavidsaver@bnl.gov>
+Send to "Michael Davidsaver" <mdavidsaver@gmail.com>
 or open a [github] [gh] issue.
 
 If possible, please include a packet capture file which will trigger the error.
