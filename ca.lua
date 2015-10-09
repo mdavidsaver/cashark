@@ -153,6 +153,9 @@ local rights = {
   [3] = "RW"
 }
 
+local bit = {[0] = "Clear", [1] = "Set"}
+
+
 local fcmd  = ProtoField.uint16("ca.command", "Command", base.HEX, bcommands)
 local fsize = ProtoField.uint32("ca.size", "Payload Size")
 
@@ -182,9 +185,17 @@ local feca  = ProtoField.uint32("ca.eca", "Status", base.HEX, ecacodes)
 local fmsg  = ProtoField.string("ca.error", "Error Message")
 local fstr  = ProtoField.string("ca.str", "Payload String")
 
+local fmask = ProtoField.uint16("ca.mask", "Event Mask", base.HEX)
+local fmask_val = ProtoField.uint16("ca.mask.val", "DBE_VALUE", base.DEC, bit, 0x1)
+local fmask_log = ProtoField.uint16("ca.mask.log", "DBE_LOG", base.DEC, bit, 0x2)
+local fmask_alm = ProtoField.uint16("ca.mask.alarm", "DBE_ALARM", base.DEC, bit, 0x4)
+local fmask_prp = ProtoField.uint16("ca.mask.prop", "DBE_PROP", base.DEC, bit, 0x8)
+
 ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
        fdbr, fpv, fserv, fport, frep, fver, fdtype, fright, fcid, fsid, fioid, fsub,
-       fbeac, feca, fmsg, fstr}
+       fbeac, feca, fmsg, fstr,
+       fmask, fmask_val, fmask_log, fmask_alm, fmask_prp
+}
 
 local specials
 
@@ -222,7 +233,7 @@ function decode (buf, pkt, root)
     return (buf:len()-(hlen+msglen:uint()))
   end
 
-  t = root:add(ca, buf(0,hlen+msglen:uint()))
+  local t = root:add(ca, buf(0,hlen+msglen:uint()))
     
   t:add(fcmd, cmd)
   t:add(fsize,msglen)
@@ -434,11 +445,16 @@ function caevent (buf, pkt, t, hlen, msglen, dcount)
   t:add(fsub, buf(12,4))
   if msglen==16
   then
-    if buf(16,4):uint()==0 and buf(20,4):uint()==0 and buf(24,4):uint()==0
+    if buf(16,4):uint()==0 and buf(20,4):uint()==0 and buf(24,4):uint()==0 and buf(28,2):uint()<256
     then
       -- ok, so *probably* a new subscription...
       t:add(fsid , buf(8,4))
-      pkt.cols.info:append("Event Add(sid="..buf(8,4):uint()..", sub="..buf(12,4):uint().."), ")
+      local m = t:add(fmask, buf(28,2))
+      m:add(fmask_val, buf(28,2))
+      m:add(fmask_log, buf(28,2))
+      m:add(fmask_alm, buf(28,2))
+      m:add(fmask_prp, buf(28,2))
+      pkt.cols.info:append("Event Add(sid="..buf(8,4):uint()..", sub="..buf(12,4):uint()..", mask="..buf(28,2):uint().."), ")
       return
     end
   end
