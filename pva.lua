@@ -61,6 +61,8 @@ local fsearch_seq = ProtoField.uint32("pva.seq", "Search Sequence #")
 local fsearch_addr = ProtoField.bytes("pva.addr", "Address")
 local fsearch_port = ProtoField.uint16("pva.port", "Port")
 local fsearch_mask = ProtoField.uint8("pva.mask", "Mask", base.HEX)
+local fsearch_mask_repl  = ProtoField.uint8("pva.reply", "Reply", base.HEX, {[0]="Optional",[1]="Required"}, 0x01)
+local fsearch_mask_bcast = ProtoField.uint8("pva.mcast", "Reply", base.HEX, {[0]="Unicast",[1]="Multicast"}, 0x80)
 local fsearch_proto = ProtoField.string("pva.proto", "Transport Protocol")
 local fsearch_cid = ProtoField.uint32("pva.cid", "Search ID")
 local fsearch_name = ProtoField.string("pva.pv", "Name")
@@ -68,7 +70,8 @@ local fsearch_name = ProtoField.string("pva.pv", "Name")
 pva.fields = {
     fmagic, fver, fflags, fflag_dir, fflag_end, fcmd, fsize, fbody, fpvd,
     fvalid_bsize, fvalid_isize, fvalid_qos, fvalid_authz,
-    fsearch_seq, fsearch_addr, fsearch_port, fsearch_mask, fsearch_proto, fsearch_cid, fsearch_name,
+    fsearch_seq, fsearch_addr, fsearch_port, fsearch_mask, fsearch_mask_repl, fsearch_mask_bcast,
+    fsearch_proto, fsearch_cid, fsearch_name,
 }
 
 local specials_server
@@ -264,7 +267,9 @@ local function pva_client_search (buf, pkt, t, isbe)
     end
 
     t:add(fsearch_seq, buf(0,4), seq)
-    t:add(fsearch_mask, buf(4,1))
+    local mask = t:add(fsearch_mask, buf(4,1))
+    mask:add(fsearch_mask_repl, buf(4,1))
+    mask:add(fsearch_mask_bcast, buf(4,1))
     t:add(fsearch_addr, buf(8,16))
     t:add(fsearch_port, buf(24,2), port)
     
