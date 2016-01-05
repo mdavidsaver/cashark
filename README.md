@@ -33,7 +33,11 @@ or open a [github] [gh] issue.
 
 If possible, please include a packet capture file which will trigger the error.
 
+Note that the PVA disector triggers [bug 10233][bug10233] with wireshark 1.12.1,
+which is known to be fixed with 2.0.
+
 [gh]: https://github.com/mdavidsaver/cashark/issues
+[bug10233]: https://bugs.wireshark.org/bugzilla/show_bug.cgi?id=10233
 
 Setup
 -----

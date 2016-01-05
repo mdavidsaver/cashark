@@ -252,7 +252,11 @@ local function test_pva (buf, pkt, root)
   return true
 end
 
-pva:register_heuristic("udp", test_pva)
+-- Wireshark 2.0 errors if the same protocol name is given for two
+-- heuristic dissectors, even for different transports.
+-- So don't register the udp dissector, which is only necessary
+-- when using a non-standard port for searches.
+--pva:register_heuristic("udp", test_pva)
 pva:register_heuristic("tcp", test_pva)
 
 local function pva_client_search (buf, pkt, t, isbe)
