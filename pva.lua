@@ -39,6 +39,14 @@ local bcommands = {
     [21] = "CANCEL_REQUEST",
 }
 
+local stscodes = {
+    [0xff] = "OK",
+    [0] = "OK",
+    [1] = "Warning",
+    [2] = "Error",
+    [3] = "Fatal Error",
+}
+
 local fmagic= ProtoField.uint8("pva.magic", "Magic", base.HEX)
 local fver  = ProtoField.uint8("pva.version", "Version", base.DEC)
 local fflags= ProtoField.uint8("pva.flags", "Flags", base.HEX)
@@ -48,6 +56,11 @@ local fcmd  = ProtoField.uint8("pva.command", "Command", base.HEX, bcommands)
 local fsize = ProtoField.uint32("pva.size", "Size", base.DEC)
 local fbody = ProtoField.bytes("pva.body", "Body")
 local fpvd = ProtoField.bytes("pva.pvd", "Data")
+
+-- common
+local fcid = ProtoField.uint32("pva.cid", "Client Channel ID")
+local fsid = ProtoField.uint32("pva.sid", "Server Channel ID")
+local fstatus = ProtoField.uint8("pva.status", "Status", base.HEX, stscodes)
 
 -- For CONNECTION_VALIDATION
 
@@ -69,6 +82,7 @@ local fsearch_name = ProtoField.string("pva.pv", "Name")
 
 pva.fields = {
     fmagic, fver, fflags, fflag_dir, fflag_end, fcmd, fsize, fbody, fpvd,
+    fcid, fsid, fstatus,
     fvalid_bsize, fvalid_isize, fvalid_qos, fvalid_authz,
     fsearch_seq, fsearch_addr, fsearch_port, fsearch_mask, fsearch_mask_repl, fsearch_mask_bcast,
     fsearch_proto, fsearch_cid, fsearch_name,
@@ -259,6 +273,29 @@ end
 --pva:register_heuristic("udp", test_pva)
 pva:register_heuristic("tcp", test_pva)
 
+local function decodeStatus (buf, pkt, t, isbe)
+  local code = buf(0,1):uint()
+  local subt = t:add(fstatus, buf(0,1))
+  if code==0xff
+  then
+    if buf:len()>1
+    then
+      return buf(1)
+    else
+      return nil
+    end
+  else
+    local message, stack
+    message, buf = decodeString(buf, isbe)
+    stack, buf = decodeString(buf, isbe)
+    subt:append_text(message)
+    if(code~=0)
+    then
+      subt:set_expert_flags(PI_RESPONSE_CODE, PI_WARN, stack)
+    end
+  end
+end
+
 local function pva_client_search (buf, pkt, t, isbe)
     pkt.cols.info:append("SEARCH('")
     local seq, port
@@ -333,7 +370,40 @@ local function pva_client_validate (buf, pkt, t, isbe)
     t:add(fpvd, buf)
 end
 
+local function pva_server_create_channel (buf, pkt, t, isbe)
+    local cid, sid
+    if isbe
+    then
+        cid = buf(0,4):uint()
+        sid = buf(4,4):uint()
+    else
+        cid = buf(0,4):le_uint()
+        sid = buf(4,4):le_uint()
+    end
+    pkt.cols.info:append("CREATE_CHANNEL(cid="..cid..", sid="..sid.."), ")
+    t:add(fcid, buf(0,4), cid)
+    t:add(fsid, buf(4,4), sid)
+    decodeStatus(buf(8), pkt, t, isbe)
+end
+
+local function pva_server_destroy_channel (buf, pkt, t, isbe)
+    local cid, sid
+    if isbe
+    then
+        sid = buf(0,4):uint()
+        cid = buf(4,4):uint()
+    else
+        sid = buf(0,4):le_uint()
+        cid = buf(4,4):le_uint()
+    end
+    pkt.cols.info:append("DESTROY_CHANNEL(cid="..cid..", sid="..sid.."), ")
+    t:add(fsid, buf(0,4), sid)
+    t:add(fcid, buf(4,4), cid)
+end
+
 specials_server = {
+    [7] = pva_server_create_channel,
+    [8] = pva_server_destroy_channel,
 }
 specials_client = {
     [1] = pva_client_validate,
