@@ -14,6 +14,7 @@ print("Loading PVA...")
 
 local pva = Proto("pva", "Process Variable Access")
 
+-- application messages
 local bcommands = {
     [0] = "BEACON",
     [1] = "CONNECTION_VALIDATION",
@@ -37,6 +38,14 @@ local bcommands = {
     [19] = "MULTIPLE_DATA",
     [20] = "RPC",
     [21] = "CANCEL_REQUEST",
+    [22] = "ORIGIN_TAG",
+}
+
+-- control messages
+local bctrlcommands = {
+    [0] = "MARK_TOTAL_BYTES_SENT",
+    [1] = "ACK_TOTAL_BYTES_RECEIVED",
+    [2] = "SET_BYTE_ORDER",
 }
 
 local stscodes = {
@@ -52,7 +61,11 @@ local fver  = ProtoField.uint8("pva.version", "Version", base.DEC)
 local fflags= ProtoField.uint8("pva.flags", "Flags", base.HEX)
 local fflag_dir = ProtoField.uint8("pva.direction", "Direction", base.HEX, {[0]="client",[1]="server"}, 0x40)
 local fflag_end = ProtoField.uint8("pva.endian", "Byte order", base.HEX, {[0]="LSB",[1]="MSG"}, 0x80)
+local fflag_msgtype = ProtoField.uint8("pva.msg_type", "Message type", base.HEX, {[0]="Application",[1]="Control"}, 0x01)
+local fflag_segmented = ProtoField.uint8("pva.segmented", "Segmented", base.HEX, {[0]="Not segmented",[1]="First segment",[2]="Last segment",[3]="In-the-middle segment"}, 0x30)
 local fcmd  = ProtoField.uint8("pva.command", "Command", base.HEX, bcommands)
+local fctrlcmd  = ProtoField.uint8("pva.ctrlcommand", "Control Command", base.HEX, bctrlcommands)
+local fctrldata  = ProtoField.uint32("pva.ctrldata", "Control Data", base.HEX)
 local fsize = ProtoField.uint32("pva.size", "Size", base.DEC)
 local fbody = ProtoField.bytes("pva.body", "Body")
 local fpvd = ProtoField.bytes("pva.pvd", "Data")
@@ -77,11 +90,11 @@ local fsearch_mask = ProtoField.uint8("pva.mask", "Mask", base.HEX)
 local fsearch_mask_repl  = ProtoField.uint8("pva.reply", "Reply", base.HEX, {[0]="Optional",[1]="Required"}, 0x01)
 local fsearch_mask_bcast = ProtoField.uint8("pva.mcast", "Reply", base.HEX, {[0]="Unicast",[1]="Multicast"}, 0x80)
 local fsearch_proto = ProtoField.string("pva.proto", "Transport Protocol")
-local fsearch_cid = ProtoField.uint32("pva.cid", "Search ID")
+local fsearch_cid = ProtoField.uint32("pva.cid", "CID")
 local fsearch_name = ProtoField.string("pva.pv", "Name")
 
 pva.fields = {
-    fmagic, fver, fflags, fflag_dir, fflag_end, fcmd, fsize, fbody, fpvd,
+    fmagic, fver, fflags, fflag_dir, fflag_end, fflag_msgtype, fflag_segmented, fcmd, fctrlcmd, fctrldata, fsize, fbody, fpvd,
     fcid, fsid, fstatus,
     fvalid_bsize, fvalid_isize, fvalid_qos, fvalid_authz,
     fsearch_seq, fsearch_addr, fsearch_port, fsearch_mask, fsearch_mask_repl, fsearch_mask_bcast,
@@ -103,14 +116,21 @@ local function decode (buf, pkt, root)
 
   local flagval = buf(2,1):uint()
   local isbe = bit.band(flagval, 0x80)
+  local ctrlcmd = bit.band(flagval, 0x01)
   local msglen
-  if isbe~=0
+  if ctrlcmd==0
   then
-    msglen = buf(4,4):uint()
+    if isbe~=0
+    then
+      msglen = buf(4,4):uint()
+    else
+      msglen = buf(4,4):le_uint()
+    end
   else
-    msglen = buf(4,4):le_uint()
+    -- control message len is always 0 (only header), size holds data
+    msglen = 0
   end
-
+  
   if buf:len()<8+msglen
   then
     return (buf:len()-(8+msglen))
@@ -121,34 +141,56 @@ local function decode (buf, pkt, root)
   t:add(fmagic, buf(0,1))
   t:add(fver, buf(1,1))
   local flags = t:add(fflags, buf(2,1))
-  t:add(fcmd, buf(3,1))
-  t:add(fsize, buf(4,4), msglen)
+  if ctrlcmd==0
+  then
+    t:add(fcmd, buf(3,1))
+    t:add(fsize, buf(4,4), msglen)
+  else
+    t:add(fctrlcmd, buf(3,1))
+    t:add(fctrldata, buf(4,4))
+  end  
 
+  flags:add(fflag_msgtype, buf(2,1))
+  flags:add(fflag_segmented, buf(2,1))
   flags:add(fflag_dir, buf(2,1))
   flags:add(fflag_end, buf(2,1))
 
   local cmd = buf(3,1):uint()
   local showgeneric = 1
 
-  if bit.band(flagval, 0x40)~=0
+  if ctrlcmd==0
   then
-      -- server
+    -- application message
+    if bit.band(flagval, 0x40)~=0
+    then
+        -- server
 
-      local spec = specials_server[cmd]
-      if spec
-      then
-          spec(buf(8,msglen), pkt, t, isbe~=0)
-          showgeneric = 0
-      end
+        local spec = specials_server[cmd]
+        if spec
+        then
+            spec(buf(8,msglen), pkt, t, isbe~=0)
+            showgeneric = 0
+        end
+    else
+        -- client
+
+        local spec = specials_client[cmd]
+        if spec
+        then
+            spec(buf(8,msglen), pkt, t, isbe~=0)
+            showgeneric = 0
+        end
+    end
   else
-      -- client
-
-      local spec = specials_client[cmd]
-      if spec
-      then
-          spec(buf(8,msglen), pkt, t, isbe~=0)
-          showgeneric = 0
-      end
+    -- control message
+    local cmd_name = bctrlcommands[cmd]
+    if cmd_name
+    then
+      pkt.cols.info:append(cmd_name..", ")
+    else
+      pkt.cols.info:append("Msg: "..cmd.." ")
+    end
+    showgeneric = 0
   end
   
   if showgeneric~=0
@@ -370,6 +412,33 @@ local function pva_client_validate (buf, pkt, t, isbe)
     t:add(fpvd, buf)
 end
 
+local function pva_client_create_channel (buf, pkt, t, isbe)
+    pkt.cols.info:append("CREATE_CHANNEL(")
+    local npv
+    if isbe then
+        npv = buf(0,2):uint()
+    else
+        npv = buf(0,2):le_uint()
+    end
+    buf = buf(2)
+    
+    for i=0,npv-1 do
+        local cid, name
+        if isbe then
+            cid = buf(0,4):uint()
+        else
+            cid = buf(0,4):le_uint()
+        end
+        t:add(fsearch_cid, buf(0,4), cid)
+        name, buf = decodeString(buf(4), isbe)
+        t:add(fsearch_name, name)
+
+        if i<npv-1 then pkt.cols.info:append("', '") end
+        pkt.cols.info:append("'"..name:string())
+    end
+    pkt.cols.info:append("'), ")
+end
+
 local function pva_server_create_channel (buf, pkt, t, isbe)
     local cid, sid
     if isbe
@@ -408,6 +477,7 @@ specials_server = {
 specials_client = {
     [1] = pva_client_validate,
     [3] = pva_client_search,
+    [7] = pva_client_create_channel,
 }
 
 print("Loaded PVA")
