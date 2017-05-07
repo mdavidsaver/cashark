@@ -335,13 +335,15 @@ local function cahost (buf, pkt, t, hlen, msglen, dcount)
 end
 
 local function casearch (buf, pkt, t, hlen, msglen, dcount)
-  if msglen==8 and buf(hlen,1):uint()==0
+  if msglen==0 or (msglen==8 and buf(hlen,1):uint()==0)
   then
     -- server message
     t:add(fport, buf(4,2))
     t:add(fserv , buf(8,4))
     t:add(fcid , buf(12,4))
-    t:add(fver, buf(hlen+2,2))
+    if msglen==8 then
+      t:add(fver, buf(hlen+2,2))
+    end
     pkt.cols.info:append("Search Reply("..buf(12,4):uint().."), ")
   else
     -- client message
