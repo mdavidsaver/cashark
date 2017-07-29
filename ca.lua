@@ -325,13 +325,13 @@ end
 local function causer (buf, pkt, t, hlen, msglen, dcount)
   t:add(fstr, buf(hlen,msglen))
   pkt.cols.info:append("User('"..buf(hlen,msglen):string())
-  pkt.cols.info:append("), ")
+  pkt.cols.info:append("'), ")
 end
 
 local function cahost (buf, pkt, t, hlen, msglen, dcount)
   t:add(fstr, buf(hlen,msglen))
   pkt.cols.info:append("Host('"..buf(hlen,msglen):string())
-  pkt.cols.info:append("), ")
+  pkt.cols.info:append("'), ")
 end
 
 local function casearch (buf, pkt, t, hlen, msglen, dcount)
