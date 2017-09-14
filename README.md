@@ -1,7 +1,7 @@
 Wireshark disector plugin for Channel Access protocol
 =====================================================
 
-Tested with wireshark 1.2.11, 1.8.2, and 1.10.8.
+Tested with wireshark 1.2.11, 1.8.2, 1.10.8, and 2.2.6.
 
 Using
 -----
@@ -29,14 +29,14 @@ Reporting bugs
 Bug reports are welcome (and patches more so).
 
 Send to "Michael Davidsaver" <mdavidsaver@gmail.com>
-or open a [github] [gh] issue.
+or open a [github] issue.
 
 If possible, please include a packet capture file which will trigger the error.
 
 Note that the PVA disector triggers [bug 10233][bug10233] with wireshark 1.12.1,
 which is known to be fixed with 2.0.
 
-[gh]: https://github.com/mdavidsaver/cashark/issues
+[github]: https://github.com/mdavidsaver/cashark/issues
 [bug10233]: https://bugs.wireshark.org/bugzilla/show_bug.cgi?id=10233
 
 Setup
