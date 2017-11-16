@@ -73,6 +73,13 @@ local fpvd = ProtoField.bytes("pva.pvd", "Data")
 -- common
 local fcid = ProtoField.uint32("pva.cid", "Client Channel ID")
 local fsid = ProtoField.uint32("pva.sid", "Server Channel ID")
+local fioid = ProtoField.uint32("pva.ioid", "Operation ID")
+local fsubcmd = ProtoField.uint8("pva.subcmd", "Sub-command", base.HEX)
+local fsubcmd_proc = ProtoField.uint8("pva.process", "Process", base.HEX, {[0]="",[1]="Yes"}, 0x04)
+local fsubcmd_init = ProtoField.uint8("pva.init",    "Init   ", base.HEX, {[0]="",[1]="Yes"}, 0x08)
+local fsubcmd_dstr = ProtoField.uint8("pva.destroy", "Destroy", base.HEX, {[0]="",[1]="Yes"}, 0x10)
+local fsubcmd_get  = ProtoField.uint8("pva.get",     "Get    ", base.HEX, {[0]="",[1]="Yes"}, 0x40)
+local fsubcmd_gtpt = ProtoField.uint8("pva.getput",  "GetPut ", base.HEX, {[0]="",[1]="Yes"}, 0x80)
 local fstatus = ProtoField.uint8("pva.status", "Status", base.HEX, stscodes)
 
 -- For CONNECTION_VALIDATION
@@ -95,7 +102,7 @@ local fsearch_name = ProtoField.string("pva.pv", "Name")
 
 pva.fields = {
     fmagic, fver, fflags, fflag_dir, fflag_end, fflag_msgtype, fflag_segmented, fcmd, fctrlcmd, fctrldata, fsize, fbody, fpvd,
-    fcid, fsid, fstatus,
+    fcid, fsid, fioid, fsubcmd, fsubcmd_proc, fsubcmd_init, fsubcmd_dstr, fsubcmd_get, fsubcmd_gtpt, fstatus,
     fvalid_bsize, fvalid_isize, fvalid_qos, fvalid_authz,
     fsearch_seq, fsearch_addr, fsearch_port, fsearch_mask, fsearch_mask_repl, fsearch_mask_bcast,
     fsearch_proto, fsearch_cid, fsearch_name,
@@ -168,7 +175,7 @@ local function decode (buf, pkt, root)
         local spec = specials_server[cmd]
         if spec
         then
-            spec(buf(8,msglen), pkt, t, isbe~=0)
+            spec(buf(8,msglen), pkt, t, isbe~=0, cmd)
             showgeneric = 0
         end
     else
@@ -177,7 +184,7 @@ local function decode (buf, pkt, root)
         local spec = specials_client[cmd]
         if spec
         then
-            spec(buf(8,msglen), pkt, t, isbe~=0)
+            spec(buf(8,msglen), pkt, t, isbe~=0, cmd)
             showgeneric = 0
         end
     end
@@ -235,6 +242,7 @@ function pva.dissector (buf, pkt, root)
 
   --print(pkt.number.." "..buf:len())
 
+  -- wireshark 1.99.2 introduced dissect_tcp_pdus() to do this for us
   while buf:len()>0
   do
     local consumed = decode(buf,pkt,root)
@@ -318,27 +326,26 @@ pva:register_heuristic("tcp", test_pva)
 local function decodeStatus (buf, pkt, t, isbe)
   local code = buf(0,1):uint()
   local subt = t:add(fstatus, buf(0,1))
+  if buf:len()>1 then
+    buf = buf(1):tvb()
+  end
   if code==0xff
   then
-    if buf:len()>1
-    then
-      return buf(1)
-    else
-      return nil
-    end
+    return buf
   else
     local message, stack
     message, buf = decodeString(buf, isbe)
     stack, buf = decodeString(buf, isbe)
-    subt:append_text(message)
-    if(code~=0)
+    subt:append_text(message:string())
+    if(code~=0 and stack:len()>0)
     then
-      subt:set_expert_flags(PI_RESPONSE_CODE, PI_WARN, stack)
+      subt:add_expert_info(PI_RESPONSE_CODE, PI_WARN, stack:string())
     end
+    return buf
   end
 end
 
-local function pva_client_search (buf, pkt, t, isbe)
+local function pva_client_search (buf, pkt, t, isbe, cmd)
     pkt.cols.info:append("SEARCH('")
     local seq, port
     if isbe then
@@ -389,7 +396,7 @@ local function pva_client_search (buf, pkt, t, isbe)
     pkt.cols.info:append("'), ")
 end
 
-local function pva_client_validate (buf, pkt, t, isbe)
+local function pva_client_validate (buf, pkt, t, isbe, cmd)
     pkt.cols.info:append("CONNECTION_VALIDATION, ")
     local bsize, isize, qos
     if isbe
@@ -412,7 +419,7 @@ local function pva_client_validate (buf, pkt, t, isbe)
     t:add(fpvd, buf)
 end
 
-local function pva_client_create_channel (buf, pkt, t, isbe)
+local function pva_client_create_channel (buf, pkt, t, isbe, cmd)
     pkt.cols.info:append("CREATE_CHANNEL(")
     local npv
     if isbe then
@@ -439,7 +446,7 @@ local function pva_client_create_channel (buf, pkt, t, isbe)
     pkt.cols.info:append("'), ")
 end
 
-local function pva_server_create_channel (buf, pkt, t, isbe)
+local function pva_server_create_channel (buf, pkt, t, isbe, cmd)
     local cid, sid
     if isbe
     then
@@ -455,7 +462,7 @@ local function pva_server_create_channel (buf, pkt, t, isbe)
     decodeStatus(buf(8), pkt, t, isbe)
 end
 
-local function pva_server_destroy_channel (buf, pkt, t, isbe)
+local function pva_destroy_channel (buf, pkt, t, isbe, cmd)
     local cid, sid
     if isbe
     then
@@ -470,14 +477,103 @@ local function pva_server_destroy_channel (buf, pkt, t, isbe)
     t:add(fcid, buf(4,4), cid)
 end
 
+local function pva_client_op (buf, pkt, t, isbe, cmd)
+    local cname = bcommands[cmd]
+    local cid, ioid, subcmd
+    if isbe
+    then
+        cid = buf(0,4):uint()
+        ioid = buf(4,4):uint()
+    else
+        cid = buf(0,4):le_uint()
+        ioid = buf(4,4):le_uint()
+    end
+    subcmd = buf(8,1):uint()
+    t:add(fcid, buf(0,4), cid)
+    t:add(fioid, buf(4,4), ioid)
+    local cmd = t:add(fsubcmd, buf(8,1), subcmd)
+    cmd:add(fsubcmd_proc, buf(8,1), subcmd)
+    cmd:add(fsubcmd_init, buf(8,1), subcmd)
+    cmd:add(fsubcmd_dstr, buf(8,1), subcmd)
+    cmd:add(fsubcmd_get, buf(8,1), subcmd)
+    cmd:add(fsubcmd_gtpt, buf(8,1), subcmd)
+    if buf:len()>9 then
+        t:add(fpvd, buf(9))
+    end
+
+    pkt.cols.info:append(string.format("%s(cid=%u, ioid=%u, sub=%02x), ", cname, cid, ioid, subcmd))
+end
+
+
+local function pva_server_op (buf, pkt, t, isbe, cmd)
+    local cname = bcommands[cmd]
+    local ioid, subcmd
+    if isbe
+    then
+        ioid = buf(0,4):uint()
+    else
+        ioid = buf(0,4):le_uint()
+    end
+    subcmd = buf(4,1):uint()
+    t:add(fioid, buf(0,4), ioid)
+    local tcmd = t:add(fsubcmd, buf(4,1), subcmd)
+    tcmd:add(fsubcmd_proc, buf(4,1), subcmd)
+    tcmd:add(fsubcmd_init, buf(4,1), subcmd)
+    tcmd:add(fsubcmd_dstr, buf(4,1), subcmd)
+    tcmd:add(fsubcmd_get, buf(4,1), subcmd)
+    tcmd:add(fsubcmd_gtpt, buf(4,1), subcmd)
+
+    if cmd~=13 or bit.band(subcmd,0x08)~=0 then
+        -- monitor updates have no status
+        buf = decodeStatus(buf(5), pkt, t, isbe)
+    end
+    if buf and buf:len()>0 then
+        t:add(fbody, buf(0))
+    end
+
+    pkt.cols.info:append(string.format("%s(ioid=%u, sub=%02x), ", cname, ioid, subcmd))
+end
+
+local function pva_client_op_destroy (buf, pkt, t, isbe, cmd)
+    local cname = bcommands[cmd]
+    local cid, ioid;
+    if isbe
+    then
+        cid = buf(0,4):uint()
+        ioid = buf(4,4):uint()
+    else
+        cid = buf(0,4):le_uint()
+        ioid = buf(4,4):le_uint()
+    end
+    t:add(fcid, buf(0,4), cid)
+    t:add(fioid, buf(4,4), ioid)
+
+    pkt.cols.info:append(string.format("%s(cid=%u, ioid=%u), ", cname, cid, ioid))
+end
+
 specials_server = {
     [7] = pva_server_create_channel,
-    [8] = pva_server_destroy_channel,
+    [8] = pva_destroy_channel,
+    [10] = pva_server_op,
+    [11] = pva_server_op,
+    [12] = pva_server_op,
+    [13] = pva_server_op,
+    [14] = pva_server_op,
+    [20] = pva_server_op,
 }
 specials_client = {
     [1] = pva_client_validate,
     [3] = pva_client_search,
     [7] = pva_client_create_channel,
+    [8] = pva_destroy_channel,
+    [10] = pva_client_op,
+    [11] = pva_client_op,
+    [12] = pva_client_op,
+    [13] = pva_client_op,
+    [14] = pva_client_op,
+    [15] = pva_client_op_destroy,
+    [20] = pva_client_op,
+    [21] = pva_client_op_destroy,
 }
 
 print("Loaded PVA")
