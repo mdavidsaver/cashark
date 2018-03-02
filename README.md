@@ -2,6 +2,7 @@ Wireshark disector plugin for Channel Access protocol
 =====================================================
 
 Tested with wireshark 1.2.11, 1.8.2, 1.10.8, and 2.2.6.
+Works on RHEL 7.4 (wireshark 1.10.14).
 
 Using
 -----
@@ -44,6 +45,10 @@ Setup
 
 To automatically load the CA disector *instead* of using the -X argument.
 
+On RHEL systems, the wireshark config directory is at /usr/share/wireshark/.
+If the file /usr/share/wireshark/init.lua doesn't exist,
+install the package wireshark-devel.
+
 Edit /etc/wireshark/init.lua and remove or comment out the line about
 disabling LUA support ("`disable_lua = true`").  You may also need
 to change the line "`run_user_scripts_when_superuser = false`"
@@ -55,7 +60,7 @@ Then add a line to the end of init.lua.
 
     dofile("ca.lua")
 
-If all goes well the string "Load CA" will be printed to the console
+If all goes well the string "Loaded CA" will be printed to the console
 when wireshark starts.
 
 To install this for a single user create `$HOME/.wireshark/init.lua` with
