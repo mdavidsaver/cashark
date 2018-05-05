@@ -100,52 +100,6 @@ local ecacodes = {
   [0x1e0] = "ECA_UNRESPTMO"
 }
 
-local dbrcodes = {
-  [0] = "STRING",
-  [1] = "INT",
-  [1] = "SHORT",
-  [2] = "FLOAT",
-  [3] = "ENUM",
-  [4] = "CHAR",
-  [5] = "LONG",
-  [6] = "DOUBLE",
-  [7] = "STS_STRING",
-  [8] = "STS_INT",
-  [8] = "STS_SHORT",
-  [9] = "STS_FLOAT",
-  [10] = "STS_ENUM",
-  [11] = "STS_CHAR",
-  [12] = "STS_LONG",
-  [13] = "STS_DOUBLE",
-  [14] = "TIME_STRING",
-  [15] = "TIME_INT",
-  [15] = "TIME_SHORT",
-  [16] = "TIME_FLOAT",
-  [17] = "TIME_ENUM",
-  [18] = "TIME_CHAR",
-  [19] = "TIME_LONG",
-  [20] = "TIME_DOUBLE",
-  [21] = "GR_STRING",
-  [22] = "GR_INT",
-  [22] = "GR_SHORT",
-  [23] = "GR_FLOAT",
-  [24] = "GR_ENUM",
-  [25] = "GR_CHAR",
-  [26] = "GR_LONG",
-  [27] = "GR_DOUBLE",
-  [28] = "CTRL_STRING",
-  [29] = "CTRL_INT",
-  [29] = "CTRL_SHORT",
-  [30] = "CTRL_FLOAT",
-  [31] = "CTRL_ENUM",
-  [32] = "CTRL_CHAR",
-  [33] = "CTRL_LONG",
-  [34] = "CTRL_DOUBLE",
-  [35] = "PUT_ACKT",
-  [36] = "PUT_ACKS",
-  [37] = "STSACK_STRING",
-  [38] = "CLASS_NAME"
-}
 
 local rights = {
   [0] = "NA",
@@ -220,6 +174,67 @@ local value_enum = ProtoField.uint16("ca.data.value", "Value", base.DEC)
 local value_float = ProtoField.float("ca.data.value", "Value")
 local value_double = ProtoField.double("ca.data.value", "Value")
 
+-- Data Struct Descriptions
+local gr_enum = {status, severity, no_str}
+for var=1,max_enum_states do
+    table.insert(gr_enum, enum_str)
+end
+table.insert(gr_enum, value_enum)
+
+local dbrtypes = {
+  [0] = {"STRING", {value_string}},
+  [1] = {"INT", {value_short}},
+  [1] = {"SHORT", {value_short}},
+  [2] = {"FLOAT", {value_float}},
+  [3] = {"ENUM", {value_enum}},
+  [4] = {"CHAR", {value_char}},
+  [5] = {"LONG", {value_long}},
+  [6] = {"DOUBLE", {value_double}},
+  [7] = {"STS_STRING", {status, severity, value_string}},
+  [8] = {"STS_INT", {status, severity, value_short}},
+  [8] = {"STS_SHORT", {status, severity, value_short}},
+  [9] = {"STS_FLOAT", {status, severity, value_long}},
+  [10] = {"STS_ENUM", {status, severity, value_enum}},
+  [11] = {"STS_CHAR", {status, severity, value_char}},
+  [12] = {"STS_LONG", {status, severity, value_long}},
+  [13] = {"STS_DOUBLE", {status, severity, value_double}},
+  [14] = {"TIME_STRING", {status, severity, timestamp_sec, timestamp_nsec, value_string}},
+  [15] = {"TIME_INT", {status, severity, timestamp_sec, timestamp_nsec, padding_short, value_short}},
+  [15] = {"TIME_SHORT", {status, severity, timestamp_sec, timestamp_nsec, padding_short, value_short}},
+  [16] = {"TIME_FLOAT", {status, severity, timestamp_sec, timestamp_nsec, value_float}},
+  [17] = {"TIME_ENUM", {status, severity, timestamp_sec, timestamp_nsec, padding_short, value_enum}},
+  [18] = {"TIME_CHAR", {status, severity, timestamp_sec, timestamp_nsec, padding_short, padding_char, value_char}},
+  [19] = {"TIME_LONG", {status, severity, timestamp_sec, timestamp_nsec, value_long}},
+  [20] = {"TIME_DOUBLE", {status, severity, timestamp_sec, timestamp_nsec, padding_long, value_double}},
+  [21] = {"GR_STRING", {status, severity, value_string}},
+  [22] = {"GR_INT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, value_short}},
+  [22] = {"GR_SHORT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, value_short}},
+  [23] = {"GR_FLOAT", {status, severity, precision, padding_short, unit, upper_disp_limit_float, lower_disp_limit_float, upper_alarm_limit_float, upper_warning_limit_float, lower_warning_limit_float, lower_alarm_limit_float, value_float}},
+  [24] = {"GR_ENUM", gr_enum},
+  [25] = {"GR_CHAR", {status, severity, unit, upper_disp_limit_char, lower_disp_limit_char, upper_alarm_limit_char, upper_warning_limit_char, lower_warning_limit_char, lower_alarm_limit_char, padding_char, value_char}},
+  [26] = {"GR_LONG", {status, severity, unit, upper_disp_limit_long, lower_disp_limit_long, upper_alarm_limit_long, upper_warning_limit_long, lower_warning_limit_long, lower_alarm_limit_long, value_long}},
+  [27] = {"GR_DOUBLE", {status, severity, unit, upper_disp_limit_double, lower_disp_limit_double, upper_alarm_limit_double, upper_warning_limit_double, lower_warning_limit_double, lower_alarm_limit_double, value_double}},
+  [28] = {"CTRL_STRING", {status, severity, value_string}},
+  [29] = {"CTRL_INT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, upper_ctrl_limit_short, lower_ctrl_limit_short, value_short}},
+  [29] = {"CTRL_SHORT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, upper_ctrl_limit_short, lower_ctrl_limit_short, value_short}},
+  [30] = {"CTRL_FLOAT", {status, severity, precision, padding_short, unit, upper_disp_limit_float, lower_disp_limit_float, upper_alarm_limit_float, upper_warning_limit_float, lower_warning_limit_float, lower_alarm_limit_float, upper_ctrl_limit_float, lower_ctrl_limit_float, value_float}},
+  [31] = {"CTRL_ENUM", gr_enum},
+  [32] = {"CTRL_CHAR", {status, severity, unit, upper_disp_limit_char, lower_disp_limit_char, upper_alarm_limit_char, upper_warning_limit_char, lower_warning_limit_char, lower_alarm_limit_char, upper_ctrl_limit_char, lower_ctrl_limit_char, padding_char, value_char}},
+  [33] = {"CTRL_LONG", {status, severity, unit, upper_disp_limit_long, lower_disp_limit_long, upper_alarm_limit_long, upper_warning_limit_long, lower_warning_limit_long, lower_alarm_limit_long, upper_ctrl_limit_long, lower_ctrl_limit_long, value_long}},
+  [34] = {"CTRL_DOUBLE", {status, severity, precision, padding_short, unit, upper_disp_limit_double, lower_disp_limit_double, upper_alarm_limit_double, upper_warning_limit_double, lower_warning_limit_double, lower_alarm_limit_double, upper_ctrl_limit_double, lower_ctrl_limit_double, value_double}},
+  [35] = {"PUT_ACKT", {}},
+  [36] = {"PUT_ACKS", {}},
+  [37] = {"STSACK_STRING", {}},
+  [38] = {"CLASS_NAME", {}}
+}
+
+local function map(func, array)
+  local new_array = {}
+  for i,v in ipairs(array) do
+    new_array[i] = func(v)
+  end
+  return new_array
+end
 
 local bit = {[0] = "Clear", [1] = "Set"}
 
@@ -240,7 +255,7 @@ local fport = ProtoField.uint16("ca.serv.port", "Server Port")
 local brep  = { [0xa] = "Success or failure", [0x5] = "Only for Success" }
 local frep  = ProtoField.uint16("ca.doreply", "Reply", base.HEX, brep)
 local fver  = ProtoField.uint16("ca.version", "Version")
-local fdtype= ProtoField.uint16("ca.dtype", "DBR Type", base.DEC, dbrcodes)
+local fdtype= ProtoField.uint16("ca.dtype", "DBR Type", base.DEC, map(function(x) return x[1] end, dbrtypes))
 local fright= ProtoField.uint32("ca.rights", "Rights", base.HEX, rights)
 local fcid  = ProtoField.uint32("ca.cid", "Client Channel ID")
 local fsid  = ProtoField.uint32("ca.sid", "Server Channel ID")
