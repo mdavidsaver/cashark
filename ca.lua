@@ -154,6 +154,73 @@ local rights = {
   [3] = "RW"
 }
 
+-- Data fields
+local status = ProtoField.int16("ca.data.status", "Status", base.DEC)
+local severity = ProtoField.int16("ca.data.severity", "Severity", base.DEC)
+local timestamp_sec = ProtoField.uint32("ca.data.timestamp.sec", "Timestamp Seconds", base.DEC)
+local timestamp_nsec = ProtoField.uint32("ca.data.timestamp.nsec", "Timestamp Nanoseconds", base.DEC)
+local unit = ProtoField.string("ca.data.units", "Unit")
+local precision = ProtoField.int16("ca.data.precision", "Precision", base.DEC)
+local no_str = ProtoField.int16("ca.data.no_str", "Number of Strings", base.DEC)
+local enum_str = ProtoField.string("ca.data.no_str", "Enum String")
+local padding_char = ProtoField.uint8("ca.data.padding", "Padding", base.DEC)
+local padding_short = ProtoField.uint16("ca.data.padding", "Padding", base.DEC)
+local padding_long = ProtoField.uint32("ca.data.padding", "Padding", base.DEC)
+
+local upper_disp_limit_char = ProtoField.int8("ca.data.upper_disp_limit", "Upper Display Limit", base.DEC)
+local lower_disp_limit_char = ProtoField.int8("ca.data.lower_disp_limit", "Lower Display Limit", base.DEC)
+local upper_alarm_limit_char = ProtoField.int8("ca.data.upper_alarm_limit", "Upper Alarm Limit", base.DEC)
+local upper_warning_limit_char = ProtoField.int8("ca.data.upper_warning_limit", "Upper Warning Limit", base.DEC)
+local lower_warning_limit_char = ProtoField.int8("ca.data.lower_warning_limit", "Lower Warning Limit", base.DEC)
+local lower_alarm_limit_char = ProtoField.int8("ca.data.lower_alarm_limit", "Lower Alarm Limit", base.DEC)
+local upper_ctrl_limit_char = ProtoField.int8("ca.data.upper_ctr_limit", "Upper Control Limit", base.DEC)
+local lower_ctrl_limit_char = ProtoField.int8("ca.data.lower_ctrl_limit", "Lower Control Limit", base.DEC)
+
+local upper_disp_limit_short = ProtoField.int16("ca.data.upper_disp_limit", "Upper Display Limit", base.DEC)
+local lower_disp_limit_short = ProtoField.int16("ca.data.lower_disp_limit", "Lower Display Limit", base.DEC)
+local upper_alarm_limit_short = ProtoField.int16("ca.data.upper_alarm_limit", "Upper Alarm Limit", base.DEC)
+local upper_warning_limit_short = ProtoField.int16("ca.data.upper_warning_limit", "Upper Warning Limit", base.DEC)
+local lower_warning_limit_short = ProtoField.int16("ca.data.lower_warning_limit", "Lower Warning Limit", base.DEC)
+local lower_alarm_limit_short = ProtoField.int16("ca.data.lower_alarm_limit", "Lower Alarm Limit", base.DEC)
+local upper_ctrl_limit_short = ProtoField.int16("ca.data.upper_ctr_limit", "Upper Control Limit", base.DEC)
+local lower_ctrl_limit_short = ProtoField.int16("ca.data.lower_ctrl_limit", "Lower Control Limit", base.DEC)
+
+local upper_disp_limit_long = ProtoField.int32("ca.data.upper_disp_limit", "Upper Display Limit", base.DEC)
+local lower_disp_limit_long = ProtoField.int32("ca.data.lower_disp_limit", "Lower Display Limit", base.DEC)
+local upper_alarm_limit_long = ProtoField.int32("ca.data.upper_alarm_limit", "Upper Alarm Limit", base.DEC)
+local upper_warning_limit_long = ProtoField.int32("ca.data.upper_warning_limit", "Upper Warning Limit", base.DEC)
+local lower_warning_limit_long = ProtoField.int32("ca.data.lower_warning_limit", "Lower Warning Limit", base.DEC)
+local lower_alarm_limit_long = ProtoField.int32("ca.data.lower_alarm_limit", "Lower Alarm Limit", base.DEC)
+local upper_ctrl_limit_long = ProtoField.int32("ca.data.upper_ctr_limit", "Upper Control Limit", base.DEC)
+local lower_ctrl_limit_long = ProtoField.int32("ca.data.lower_ctrl_limit", "Lower Control Limit", base.DEC)
+
+local upper_disp_limit_float = ProtoField.float("ca.data.upper_disp_limit", "Upper Display Limit", base.DEC)
+local lower_disp_limit_float = ProtoField.float("ca.data.lower_disp_limit", "Lower Display Limit", base.DEC)
+local upper_alarm_limit_float = ProtoField.float("ca.data.upper_alarm_limit", "Upper Alarm Limit", base.DEC)
+local upper_warning_limit_float = ProtoField.float("ca.data.upper_warning_limit", "Upper Warning Limit", base.DEC)
+local lower_warning_limit_float = ProtoField.float("ca.data.lower_warning_limit", "Lower Warning Limit", base.DEC)
+local lower_alarm_limit_float = ProtoField.float("ca.data.lower_alarm_limit", "Lower Alarm Limit", base.DEC)
+local upper_ctrl_limit_float = ProtoField.float("ca.data.upper_ctr_limit", "Upper Control Limit", base.DEC)
+local lower_ctrl_limit_float = ProtoField.float("ca.data.lower_ctrl_limit", "Lower Control Limit", base.DEC)
+
+local upper_disp_limit_double = ProtoField.double("ca.data.upper_disp_limit", "Upper Display Limit", base.DEC)
+local lower_disp_limit_double = ProtoField.double("ca.data.lower_disp_limit", "Lower Display Limit", base.DEC)
+local upper_alarm_limit_double = ProtoField.double("ca.data.upper_alarm_limit", "Upper Alarm Limit", base.DEC)
+local upper_warning_limit_double = ProtoField.double("ca.data.upper_warning_limit", "Upper Warning Limit", base.DEC)
+local lower_warning_limit_double = ProtoField.double("ca.data.lower_warning_limit", "Lower Warning Limit", base.DEC)
+local lower_alarm_limit_double = ProtoField.double("ca.data.lower_alarm_limit", "Lower Alarm Limit", base.DEC)
+local upper_ctrl_limit_double = ProtoField.double("ca.data.upper_ctr_limit", "Upper Control Limit", base.DEC)
+local lower_ctrl_limit_double = ProtoField.double("ca.data.lower_ctrl_limit", "Lower Control Limit", base.DEC)
+
+local value_string = ProtoField.string("ca.data.value", "Value", base.UNICODE)
+local value_char = ProtoField.uint8("ca.data.value", "Value", base.DEC)
+local value_short = ProtoField.int16("ca.data.value", "Value", base.DEC)
+local value_long = ProtoField.int32("ca.data.value", "Value", base.DEC)
+local value_enum = ProtoField.uint16("ca.data.value", "Value", base.DEC)
+local value_float = ProtoField.float("ca.data.value", "Value")
+local value_double = ProtoField.double("ca.data.value", "Value")
+
+
 local bit = {[0] = "Clear", [1] = "Set"}
 
 
@@ -192,10 +259,21 @@ local fmask_log = ProtoField.uint16("ca.mask.log", "DBE_LOG", base.DEC, bit, 0x2
 local fmask_alm = ProtoField.uint16("ca.mask.alarm", "DBE_ALARM", base.DEC, bit, 0x4)
 local fmask_prp = ProtoField.uint16("ca.mask.prop", "DBE_PROP", base.DEC, bit, 0x8)
 
+local element = ProtoField.bytes("ca.data.element", "Element", base.None)
+
 ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
-       fdbr, fpv, fserv, fport, frep, fver, fdtype, fright, fcid, fsid, fioid, fsub,
-       fbeac, feca, fmsg, fstr,
-       fmask, fmask_val, fmask_log, fmask_alm, fmask_prp
+    fdbr, fpv, fserv, fport, frep, fver, fdtype, fright, fcid, fsid, fioid, fsub,
+    fbeac, feca, fmsg, fstr,
+    fmask, fmask_val, fmask_log, fmask_alm, fmask_prp,
+    status, severity, timestamp_sec, timestamp_nsec, unit, precision, no_str, enum_str,
+    padding_char, padding_short, padding_long,
+    upper_disp_limit_char, lower_disp_limit_char, upper_alarm_limit_char, upper_warning_limit_char, lower_warning_limit_char, lower_alarm_limit_char,
+    upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short,
+    upper_disp_limit_long, lower_disp_limit_long, upper_alarm_limit_long, upper_warning_limit_long, lower_warning_limit_long, lower_alarm_limit_long,
+    upper_disp_limit_float, lower_disp_limit_float, upper_alarm_limit_float, upper_warning_limit_float, lower_warning_limit_float, lower_alarm_limit_float,
+    upper_disp_limit_double, lower_disp_limit_double, upper_alarm_limit_double, upper_warning_limit_double, lower_warning_limit_double, lower_alarm_limit_double,
+    value_string, value_char, value_short, value_long, value_enum, value_float, value_double,
+    element
 }
 
 local specials
