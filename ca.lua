@@ -572,7 +572,8 @@ local function parse_data (buf, pkt, t, hlen, msglen, dcount, data_type)
 end
 
 local function careadnotify (buf, pkt, t, hlen, msglen, dcount)
-  t:add(fdtype,buf(4,2))
+  local data_type = buf(4,2)
+  t:add(fdtype, data_type)
   t:add(fcnt, dcount)
   t:add(fioid, buf(12,4))
   if msglen==0 and dcount~=0
@@ -583,13 +584,14 @@ local function careadnotify (buf, pkt, t, hlen, msglen, dcount)
   else
     -- server message (reply)
     t:add(feca , buf(8,4))
-    t:add(fdata, buf(hlen,msglen))
+    parse_data(buf, pkt, t, hlen, msglen, dcount:uint(), data_type:uint())
     pkt.cols.info:append("Read Reply(ioid="..buf(12,4):uint().."), ")
   end
 end
 
 local function cawritenotify (buf, pkt, t, hlen, msglen, dcount)
-  t:add(fdtype,buf(4,2))
+  local data_type = buf(4,2)
+  t:add(fdtype, data_type)
   t:add(fcnt, dcount)
   t:add(fioid, buf(12,4))
   if msglen==0 and dcount~=0
@@ -600,23 +602,25 @@ local function cawritenotify (buf, pkt, t, hlen, msglen, dcount)
   else
     -- client message (request)
     t:add(fsid , buf(8,4))
-    t:add(fdata, buf(hlen,msglen))
+    parse_data(buf, pkt, t, hlen, msglen, dcount:uint(), data_type:uint())
     pkt.cols.info:append("Write Request(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
   end
 end
 
 local function cawrite (buf, pkt, t, hlen, msglen, dcount)
   -- client message (request)
-  t:add(fdtype,buf(4,2))
+  local data_type = buf(4,2)
+  t:add(fdtype, data_type)
   t:add(fcnt, dcount)
   t:add(fioid, buf(12,4))
   t:add(fsid , buf(8,4))
-  t:add(fdata, buf(hlen,msglen))
+  parse_data(buf, pkt, t, hlen, msglen, dcount:uint(), data_type:uint())
   pkt.cols.info:append("Write(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
 end
 
 local function caevent (buf, pkt, t, hlen, msglen, dcount)
-  t:add(fdtype,buf(4,2))
+  local data_type = buf(4,2)
+  t:add(fdtype, data_type)
   t:add(fcnt, dcount)
   t:add(fsub, buf(12,4))
   if msglen==16
@@ -641,7 +645,7 @@ local function caevent (buf, pkt, t, hlen, msglen, dcount)
     -- the last monitor update after subscription cancel
     pkt.cols.info:append("Event Final(sub="..buf(12,4):uint().."), ")
   else
-    t:add(fdata, buf(hlen,msglen))
+    parse_data(buf, pkt, t, hlen, msglen, dcount:uint(), data_type:uint())
     pkt.cols.info:append("Event(sub="..buf(12,4):uint().."), ")
   end
 end
