@@ -100,6 +100,11 @@ local ecacodes = {
   [0x1e0] = "ECA_UNRESPTMO"
 }
 
+-- String sizes
+local max_string_size = 40
+local max_unit_size = 8
+local max_enum_string_size = 26
+local max_enum_states = 16
 
 local rights = {
   [0] = "NA",
@@ -226,6 +231,62 @@ local dbrtypes = {
   [36] = {"PUT_ACKS", {}},
   [37] = {"STSACK_STRING", {}},
   [38] = {"CLASS_NAME", {}}
+}
+
+local field_sizes = {
+  [status] = 2,
+  [severity] = 2,
+  [timestamp_sec] = 4,
+  [timestamp_nsec] = 4,
+  [unit] = max_unit_size,
+  [precision] = 2,
+  [no_str] = 2,
+  [enum_str] = max_enum_str_size,
+  [padding_char] = 1,
+  [padding_short] = 2,
+  [padding_long] = 4,
+  [upper_disp_limit_char] = 1,
+  [lower_disp_limit_char] = 1,
+  [upper_alarm_limit_char] = 1,
+  [upper_warning_limit_char] = 1,
+  [lower_warning_limit_char] = 1,
+  [upper_ctrl_limit_char] = 1,
+  [lower_ctrl_limit_char] = 1,
+  [upper_disp_limit_short] = 2,
+  [lower_disp_limit_short] = 2,
+  [upper_alarm_limit_short] = 2,
+  [upper_warning_limit_short] = 2,
+  [lower_warning_limit_short] = 2,
+  [upper_ctrl_limit_short] = 2,
+  [lower_ctrl_limit_short] = 2,
+  [upper_disp_limit_long] = 4,
+  [lower_disp_limit_long] = 4,
+  [upper_alarm_limit_long] = 4,
+  [upper_warning_limit_long] = 4,
+  [lower_warning_limit_long] = 4,
+  [upper_ctrl_limit_long] = 4,
+  [lower_ctrl_limit_long] = 4,
+  [upper_disp_limit_float] = 4,
+  [lower_disp_limit_float] = 4,
+  [upper_alarm_limit_float] = 4,
+  [upper_warning_limit_float] = 4,
+  [lower_warning_limit_float] = 4,
+  [upper_ctrl_limit_float] = 4,
+  [lower_ctrl_limit_float] = 4,
+  [upper_disp_limit_double] = 8,
+  [lower_disp_limit_double] = 8,
+  [upper_alarm_limit_double] = 8,
+  [upper_warning_limit_double] = 8,
+  [lower_warning_limit_double] = 8,
+  [upper_ctrl_limit_double] = 8,
+  [lower_ctrl_limit_double] = 8,
+  [value_string] = max_string_size,
+  [value_char] = 1,
+  [value_short] = 2,
+  [value_long] = 4,
+  [value_enum] = 2,
+  [value_float] = 2,
+  [value_double] = 8
 }
 
 local function map(func, array)
@@ -487,6 +548,27 @@ local function cacleanchan (buf, pkt, t, hlen, msglen, dcount)
   t:add(fsid, buf(8,4))
   t:add(fcid, buf(12,4))
   pkt.cols.info:append("Clear Channel(cid="..buf(12,4):uint()..", sid="..buf(8,4):uint().."), ")
+end
+
+local function parse_data (buf, pkt, t, hlen, msglen, dcount, data_type)
+  local struct = dbrtypes[data_type][2]
+  local len = 0
+  for j, v in ipairs(struct) do
+    len = len + field_sizes[v]
+  end
+  if len == 0 then
+    t:add(fdata, buf(hlen, msglen))
+  else
+    local offset = hlen
+    for i=1,dcount do
+      local elem = t:add(element, buf(offset, len), "", "Element " .. i)
+      for j, v in ipairs(struct) do
+        local size = field_sizes[v]
+        elem:add(v, buf(offset, size))
+        offset = offset + size
+      end
+    end
+  end
 end
 
 local function careadnotify (buf, pkt, t, hlen, msglen, dcount)
