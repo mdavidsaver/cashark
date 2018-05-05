@@ -30,6 +30,7 @@ local bcommands = {
   [0x14] = "User",
   [0x15] = "Host",
   [0x16] = "Rights",
+  [0x17] = "Echo",
   [0x18] = "Repeater Register",
   [0x1a] = "Create Channel Fail",
   [0x1b] = "Server Disconnect"
