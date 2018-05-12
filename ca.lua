@@ -186,51 +186,54 @@ for var=1,max_enum_states do
 end
 table.insert(gr_enum, value_enum)
 
+-- map DBR type code to N-ple:
+--            meta-data    value
+--  {"NAME", {ProtoField}, ProtoField}
 local dbrtypes = {
-  [0] = {"STRING", {value_string}},
-  [1] = {"INT", {value_short}},
-  [1] = {"SHORT", {value_short}},
-  [2] = {"FLOAT", {value_float}},
-  [3] = {"ENUM", {value_enum}},
-  [4] = {"CHAR", {value_char}},
-  [5] = {"LONG", {value_long}},
-  [6] = {"DOUBLE", {value_double}},
-  [7] = {"STS_STRING", {status, severity, value_string}},
-  [8] = {"STS_INT", {status, severity, value_short}},
-  [8] = {"STS_SHORT", {status, severity, value_short}},
-  [9] = {"STS_FLOAT", {status, severity, value_long}},
-  [10] = {"STS_ENUM", {status, severity, value_enum}},
-  [11] = {"STS_CHAR", {status, severity, value_char}},
-  [12] = {"STS_LONG", {status, severity, value_long}},
-  [13] = {"STS_DOUBLE", {status, severity, value_double}},
-  [14] = {"TIME_STRING", {status, severity, timestamp_sec, timestamp_nsec, value_string}},
-  [15] = {"TIME_INT", {status, severity, timestamp_sec, timestamp_nsec, padding_short, value_short}},
-  [15] = {"TIME_SHORT", {status, severity, timestamp_sec, timestamp_nsec, padding_short, value_short}},
-  [16] = {"TIME_FLOAT", {status, severity, timestamp_sec, timestamp_nsec, value_float}},
-  [17] = {"TIME_ENUM", {status, severity, timestamp_sec, timestamp_nsec, padding_short, value_enum}},
-  [18] = {"TIME_CHAR", {status, severity, timestamp_sec, timestamp_nsec, padding_short, padding_char, value_char}},
-  [19] = {"TIME_LONG", {status, severity, timestamp_sec, timestamp_nsec, value_long}},
-  [20] = {"TIME_DOUBLE", {status, severity, timestamp_sec, timestamp_nsec, padding_long, value_double}},
-  [21] = {"GR_STRING", {status, severity, value_string}},
-  [22] = {"GR_INT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, value_short}},
-  [22] = {"GR_SHORT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, value_short}},
-  [23] = {"GR_FLOAT", {status, severity, precision, padding_short, unit, upper_disp_limit_float, lower_disp_limit_float, upper_alarm_limit_float, upper_warning_limit_float, lower_warning_limit_float, lower_alarm_limit_float, value_float}},
-  [24] = {"GR_ENUM", gr_enum},
-  [25] = {"GR_CHAR", {status, severity, unit, upper_disp_limit_char, lower_disp_limit_char, upper_alarm_limit_char, upper_warning_limit_char, lower_warning_limit_char, lower_alarm_limit_char, padding_char, value_char}},
-  [26] = {"GR_LONG", {status, severity, unit, upper_disp_limit_long, lower_disp_limit_long, upper_alarm_limit_long, upper_warning_limit_long, lower_warning_limit_long, lower_alarm_limit_long, value_long}},
-  [27] = {"GR_DOUBLE", {status, severity, unit, upper_disp_limit_double, lower_disp_limit_double, upper_alarm_limit_double, upper_warning_limit_double, lower_warning_limit_double, lower_alarm_limit_double, value_double}},
-  [28] = {"CTRL_STRING", {status, severity, value_string}},
-  [29] = {"CTRL_INT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, upper_ctrl_limit_short, lower_ctrl_limit_short, value_short}},
-  [29] = {"CTRL_SHORT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, upper_ctrl_limit_short, lower_ctrl_limit_short, value_short}},
-  [30] = {"CTRL_FLOAT", {status, severity, precision, padding_short, unit, upper_disp_limit_float, lower_disp_limit_float, upper_alarm_limit_float, upper_warning_limit_float, lower_warning_limit_float, lower_alarm_limit_float, upper_ctrl_limit_float, lower_ctrl_limit_float, value_float}},
-  [31] = {"CTRL_ENUM", gr_enum},
-  [32] = {"CTRL_CHAR", {status, severity, unit, upper_disp_limit_char, lower_disp_limit_char, upper_alarm_limit_char, upper_warning_limit_char, lower_warning_limit_char, lower_alarm_limit_char, upper_ctrl_limit_char, lower_ctrl_limit_char, padding_char, value_char}},
-  [33] = {"CTRL_LONG", {status, severity, unit, upper_disp_limit_long, lower_disp_limit_long, upper_alarm_limit_long, upper_warning_limit_long, lower_warning_limit_long, lower_alarm_limit_long, upper_ctrl_limit_long, lower_ctrl_limit_long, value_long}},
-  [34] = {"CTRL_DOUBLE", {status, severity, precision, padding_short, unit, upper_disp_limit_double, lower_disp_limit_double, upper_alarm_limit_double, upper_warning_limit_double, lower_warning_limit_double, lower_alarm_limit_double, upper_ctrl_limit_double, lower_ctrl_limit_double, value_double}},
-  [35] = {"PUT_ACKT", {}},
-  [36] = {"PUT_ACKS", {}},
-  [37] = {"STSACK_STRING", {}},
-  [38] = {"CLASS_NAME", {}}
+  [0] = {"STRING", {}, value_string},
+  [1] = {"INT", {}, value_short},
+  [1] = {"SHORT", {}, value_short},
+  [2] = {"FLOAT", {}, value_float},
+  [3] = {"ENUM", {}, value_enum},
+  [4] = {"CHAR", {}, value_char},
+  [5] = {"LONG", {}, value_long},
+  [6] = {"DOUBLE", {}, value_double},
+  [7] = {"STS_STRING", {status, severity}, value_string},
+  [8] = {"STS_INT", {status, severity}, value_short},
+  [8] = {"STS_SHORT", {status, severity}, value_short},
+  [9] = {"STS_FLOAT", {status, severity}, value_long},
+  [10] = {"STS_ENUM", {status, severity}, value_enum},
+  [11] = {"STS_CHAR", {status, severity}, value_char},
+  [12] = {"STS_LONG", {status, severity}, value_long},
+  [13] = {"STS_DOUBLE", {status, severity}, value_double},
+  [14] = {"TIME_STRING", {status, severity, timestamp_sec, timestamp_nsec}, value_string},
+  [15] = {"TIME_INT", {status, severity, timestamp_sec, timestamp_nsec, padding_short}, value_short},
+  [15] = {"TIME_SHORT", {status, severity, timestamp_sec, timestamp_nsec, padding_short}, value_short},
+  [16] = {"TIME_FLOAT", {status, severity, timestamp_sec, timestamp_nsec}, value_float},
+  [17] = {"TIME_ENUM", {status, severity, timestamp_sec, timestamp_nsec, padding_short}, value_enum},
+  [18] = {"TIME_CHAR", {status, severity, timestamp_sec, timestamp_nsec, padding_short, padding_char}, value_char},
+  [19] = {"TIME_LONG", {status, severity, timestamp_sec, timestamp_nsec}, value_long},
+  [20] = {"TIME_DOUBLE", {status, severity, timestamp_sec, timestamp_nsec, padding_long}, value_double},
+  [21] = {"GR_STRING", {status, severity}, value_string},
+  [22] = {"GR_INT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short}, value_short},
+  [22] = {"GR_SHORT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short}, value_short},
+  [23] = {"GR_FLOAT", {status, severity, precision, padding_short, unit, upper_disp_limit_float, lower_disp_limit_float, upper_alarm_limit_float, upper_warning_limit_float, lower_warning_limit_float, lower_alarm_limit_float}, value_float},
+  [24] = {"GR_ENUM", gr_enum, value_enum},
+  [25] = {"GR_CHAR", {status, severity, unit, upper_disp_limit_char, lower_disp_limit_char, upper_alarm_limit_char, upper_warning_limit_char, lower_warning_limit_char, lower_alarm_limit_char, padding_char}, value_char},
+  [26] = {"GR_LONG", {status, severity, unit, upper_disp_limit_long, lower_disp_limit_long, upper_alarm_limit_long, upper_warning_limit_long, lower_warning_limit_long, lower_alarm_limit_long}, value_long},
+  [27] = {"GR_DOUBLE", {status, severity, unit, upper_disp_limit_double, lower_disp_limit_double, upper_alarm_limit_double, upper_warning_limit_double, lower_warning_limit_double, lower_alarm_limit_double}, value_double},
+  [28] = {"CTRL_STRING", {status, severity}, value_string},
+  [29] = {"CTRL_INT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, upper_ctrl_limit_short, lower_ctrl_limit_short}, value_short},
+  [29] = {"CTRL_SHORT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, upper_ctrl_limit_short, lower_ctrl_limit_short}, value_short},
+  [30] = {"CTRL_FLOAT", {status, severity, precision, padding_short, unit, upper_disp_limit_float, lower_disp_limit_float, upper_alarm_limit_float, upper_warning_limit_float, lower_warning_limit_float, lower_alarm_limit_float, upper_ctrl_limit_float, lower_ctrl_limit_float}, value_float},
+  [31] = {"CTRL_ENUM", gr_enum, value_enum},
+  [32] = {"CTRL_CHAR", {status, severity, unit, upper_disp_limit_char, lower_disp_limit_char, upper_alarm_limit_char, upper_warning_limit_char, lower_warning_limit_char, lower_alarm_limit_char, upper_ctrl_limit_char, lower_ctrl_limit_char}, padding_char, value_char},
+  [33] = {"CTRL_LONG", {status, severity, unit, upper_disp_limit_long, lower_disp_limit_long, upper_alarm_limit_long, upper_warning_limit_long, lower_warning_limit_long, lower_alarm_limit_long, upper_ctrl_limit_long, lower_ctrl_limit_long}, value_long},
+  [34] = {"CTRL_DOUBLE", {status, severity, precision, padding_short, unit, upper_disp_limit_double, lower_disp_limit_double, upper_alarm_limit_double, upper_warning_limit_double, lower_warning_limit_double, lower_alarm_limit_double, upper_ctrl_limit_double, lower_ctrl_limit_double}, value_double},
+  [35] = {"PUT_ACKT", {}, value_short},
+  [36] = {"PUT_ACKS", {}, value_short},
+  [37] = {"STSACK_STRING", {status, severity}, value_string},
+  [38] = {"CLASS_NAME", {}, value_string}
 }
 
 local field_sizes = {
@@ -556,29 +559,28 @@ local function cacleanchan (buf, pkt, t, hlen, msglen, dcount)
 end
 
 -- process buffer as DBR data
-local function parse_data (buf, pkt, t, dcount, data_type)
+local function parse_dbr (buf, pkt, t, dcount, data_type)
   local dbrinfo = dbrtypes[data_type]
-  if not dbrinfo then
+  local name, metafields, valuefield = dbrinfo[1], dbrinfo[2], dbrinfo[3]
+
+  if not valuefield then
     t:add(fdata, buf):add_expert_info(PI_MALFORMED, PI_WARN, "Unknown DBR type")
     return
   end
 
-  local struct = dbrinfo[2]
-  local len = 0 -- total size of meta-data and first element
-  for j, v in ipairs(struct) do
-    len = len + field_sizes[v]
-  end
-  assert(len > 0, "Logic error in dbrinfo[]")
-
+  -- process meta-data fields
   local offset = 0
+  for _idx,mfld in ipairs(metafields) do
+    local flen = field_sizes[mfld]
+    t:add(mfld, buf(offset, flen))
+    offset = offset + flen
+  end
+
+  -- process each value
+  local vlen = field_sizes[valuefield]
   for i=1,dcount do
-    -- TODO: meta-data only before first element
-    local elem = t:add(element, buf(offset, len), "", "Element " .. i)
-    for j, v in ipairs(struct) do
-      local size = field_sizes[v]
-      elem:add(v, buf(offset, size))
-      offset = offset + size
-    end
+    t:add(valuefield, buf(offset, vlen))
+    offset = offset + vlen
   end
 end
 
@@ -595,7 +597,7 @@ local function careadnotify (buf, pkt, t, hlen, msglen, dcount)
   else
     -- server message (reply)
     t:add(feca , buf(8,4))
-    parse_data(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
+    parse_dbr(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
     pkt.cols.info:append("Read Reply(ioid="..buf(12,4):uint().."), ")
   end
 end
@@ -613,7 +615,7 @@ local function cawritenotify (buf, pkt, t, hlen, msglen, dcount)
   else
     -- client message (request)
     t:add(fsid , buf(8,4))
-    parse_data(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
+    parse_dbr(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
     pkt.cols.info:append("Write Request(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
   end
 end
@@ -625,7 +627,7 @@ local function cawrite (buf, pkt, t, hlen, msglen, dcount)
   t:add(fcnt, dcount)
   t:add(fioid, buf(12,4))
   t:add(fsid , buf(8,4))
-  parse_data(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
+  parse_dbr(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
   pkt.cols.info:append("Write(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
 end
 
@@ -656,7 +658,7 @@ local function caevent (buf, pkt, t, hlen, msglen, dcount)
     -- the last monitor update after subscription cancel
     pkt.cols.info:append("Event Final(sub="..buf(12,4):uint().."), ")
   else
-    parse_data(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
+    parse_dbr(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
     pkt.cols.info:append("Event(sub="..buf(12,4):uint().."), ")
   end
 end
