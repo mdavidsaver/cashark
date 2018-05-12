@@ -116,7 +116,8 @@ local rights = {
 -- Data fields
 local status = ProtoField.int16("ca.data.status", "Status", base.DEC)
 local severity = ProtoField.int16("ca.data.severity", "Severity", base.DEC)
-local timestamp_sec = ProtoField.uint32("ca.data.timestamp.sec", "Timestamp Seconds", base.DEC)
+local timestamp = ProtoField.bytes("ca.data.timestamp", "Timestamp")
+local timestamp_sec = ProtoField.uint32("ca.data.timestamp.sec", "Timestamp Seconds")
 local timestamp_nsec = ProtoField.uint32("ca.data.timestamp.nsec", "Timestamp Nanoseconds", base.DEC)
 local unit = ProtoField.string("ca.data.units", "Unit")
 local precision = ProtoField.int16("ca.data.precision", "Precision", base.DEC)
@@ -206,14 +207,14 @@ local dbrtypes = {
   [11] = {"STS_CHAR", {status, severity}, value_char},
   [12] = {"STS_LONG", {status, severity}, value_long},
   [13] = {"STS_DOUBLE", {status, severity}, value_double},
-  [14] = {"TIME_STRING", {status, severity, timestamp_sec, timestamp_nsec}, value_string},
-  [15] = {"TIME_INT", {status, severity, timestamp_sec, timestamp_nsec, padding_short}, value_short},
-  [15] = {"TIME_SHORT", {status, severity, timestamp_sec, timestamp_nsec, padding_short}, value_short},
-  [16] = {"TIME_FLOAT", {status, severity, timestamp_sec, timestamp_nsec}, value_float},
-  [17] = {"TIME_ENUM", {status, severity, timestamp_sec, timestamp_nsec, padding_short}, value_enum},
-  [18] = {"TIME_CHAR", {status, severity, timestamp_sec, timestamp_nsec, padding_short, padding_char}, value_char},
-  [19] = {"TIME_LONG", {status, severity, timestamp_sec, timestamp_nsec}, value_long},
-  [20] = {"TIME_DOUBLE", {status, severity, timestamp_sec, timestamp_nsec, padding_long}, value_double},
+  [14] = {"TIME_STRING", {status, severity, timestamp}, value_string},
+  [15] = {"TIME_INT", {status, severity, timestamp, padding_short}, value_short},
+  [15] = {"TIME_SHORT", {status, severity, timestamp, padding_short}, value_short},
+  [16] = {"TIME_FLOAT", {status, severity, timestamp}, value_float},
+  [17] = {"TIME_ENUM", {status, severity, timestamp, padding_short}, value_enum},
+  [18] = {"TIME_CHAR", {status, severity, timestamp, padding_short, padding_char}, value_char},
+  [19] = {"TIME_LONG", {status, severity, timestamp}, value_long},
+  [20] = {"TIME_DOUBLE", {status, severity, timestamp, padding_long}, value_double},
   [21] = {"GR_STRING", {status, severity}, value_string},
   [22] = {"GR_INT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short}, value_short},
   [22] = {"GR_SHORT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short}, value_short},
@@ -239,6 +240,7 @@ local dbrtypes = {
 local field_sizes = {
   [status] = 2,
   [severity] = 2,
+  [timestamp] = 8,
   [timestamp_sec] = 4,
   [timestamp_nsec] = 4,
   [unit] = max_unit_size,
@@ -338,21 +340,18 @@ local fmask_log = ProtoField.uint16("ca.mask.log", "DBE_LOG", base.DEC, bit, 0x2
 local fmask_alm = ProtoField.uint16("ca.mask.alarm", "DBE_ALARM", base.DEC, bit, 0x4)
 local fmask_prp = ProtoField.uint16("ca.mask.prop", "DBE_PROP", base.DEC, bit, 0x8)
 
-local element = ProtoField.bytes("ca.data.element", "Element", base.None)
-
 ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
     fdbr, fpv, fserv, fport, frep, fver, fdtype, fright, fcid, fsid, fioid, fsub,
     fbeac, feca, fmsg, fstr,
     fmask, fmask_val, fmask_log, fmask_alm, fmask_prp,
-    status, severity, timestamp_sec, timestamp_nsec, unit, precision, no_str, enum_str,
+    status, severity, timestamp, timestamp_sec, timestamp_nsec, unit, precision, no_str, enum_str,
     padding_char, padding_short, padding_long,
     upper_disp_limit_char, lower_disp_limit_char, upper_alarm_limit_char, upper_warning_limit_char, lower_warning_limit_char, lower_alarm_limit_char,
     upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short,
     upper_disp_limit_long, lower_disp_limit_long, upper_alarm_limit_long, upper_warning_limit_long, lower_warning_limit_long, lower_alarm_limit_long,
     upper_disp_limit_float, lower_disp_limit_float, upper_alarm_limit_float, upper_warning_limit_float, lower_warning_limit_float, lower_alarm_limit_float,
     upper_disp_limit_double, lower_disp_limit_double, upper_alarm_limit_double, upper_warning_limit_double, lower_warning_limit_double, lower_alarm_limit_double,
-    value_string, value_char, value_short, value_long, value_enum, value_float, value_double,
-    element
+    value_string, value_char, value_short, value_long, value_enum, value_float, value_double
 }
 
 local specials
@@ -572,7 +571,14 @@ local function parse_dbr (buf, pkt, t, dcount, data_type)
   local offset = 0
   for _idx,mfld in ipairs(metafields) do
     local flen = field_sizes[mfld]
-    t:add(mfld, buf(offset, flen))
+    if mfld == timestamp then
+      -- special handling for timestamp
+      local st = t:add(timestamp, buf(offset, flen)):set_text("Timestamp: "..os.date("%c", buf(offset+0, 4):uint()+631152000))
+      st:add(timestamp_sec , buf(offset+0, 4))
+      st:add(timestamp_nsec, buf(offset+4, 4))
+    else
+      t:add(mfld, buf(offset, flen))
+    end
     offset = offset + flen
   end
 
