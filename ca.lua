@@ -185,7 +185,6 @@ local gr_enum = {status, severity, no_str}
 for var=1,max_enum_states do
     table.insert(gr_enum, enum_str)
 end
-table.insert(gr_enum, value_enum)
 
 -- map DBR type code to N-ple:
 --            meta-data    value
@@ -246,7 +245,7 @@ local field_sizes = {
   [unit] = max_unit_size,
   [precision] = 2,
   [no_str] = 2,
-  [enum_str] = max_enum_str_size,
+  [enum_str] = max_enum_string_size,
   [padding_char] = 1,
   [padding_short] = 2,
   [padding_long] = 4,
@@ -560,7 +559,7 @@ end
 -- process buffer as DBR data
 local function parse_dbr (buf, pkt, t, dcount, data_type)
   local dbrinfo = dbrtypes[data_type]
-  local name, metafields, valuefield = dbrinfo[1], dbrinfo[2], dbrinfo[3]
+  local _, metafields, valuefield = dbrinfo[1], dbrinfo[2], dbrinfo[3]
 
   if not valuefield then
     t:add(fdata, buf):add_expert_info(PI_MALFORMED, PI_WARN, "Unknown DBR type")
@@ -569,7 +568,7 @@ local function parse_dbr (buf, pkt, t, dcount, data_type)
 
   -- process meta-data fields
   local offset = 0
-  for _idx,mfld in ipairs(metafields) do
+  for _,mfld in ipairs(metafields) do
     local flen = field_sizes[mfld]
     if mfld == timestamp then
       -- special handling for timestamp
@@ -584,7 +583,7 @@ local function parse_dbr (buf, pkt, t, dcount, data_type)
 
   -- process each value
   local vlen = field_sizes[valuefield]
-  for i=1,dcount do
+  for _=1,dcount do
     t:add(valuefield, buf(offset, vlen))
     offset = offset + vlen
   end
