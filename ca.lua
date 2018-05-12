@@ -556,23 +556,29 @@ local function cacleanchan (buf, pkt, t, hlen, msglen, dcount)
   pkt.cols.info:append("Clear Channel(cid="..buf(12,4):uint()..", sid="..buf(8,4):uint().."), ")
 end
 
-local function parse_data (buf, pkt, t, hlen, msglen, dcount, data_type)
-  local struct = dbrtypes[data_type][2]
-  local len = 0
+-- process buffer as DBR data
+local function parse_data (buf, pkt, t, dcount, data_type)
+  local dbrinfo = dbrtypes[data_type]
+  if not dbrinfo then
+    t:add(fdata, buf):add_expert_info(PI_MALFORMED, PI_WARN, "Unknown DBR type")
+    return
+  end
+
+  local struct = dbrinfo[2]
+  local len = 0 -- total size of meta-data and first element
   for j, v in ipairs(struct) do
     len = len + field_sizes[v]
   end
-  if len == 0 then
-    t:add(fdata, buf(hlen, msglen))
-  else
-    local offset = hlen
-    for i=1,dcount do
-      local elem = t:add(element, buf(offset, len), "", "Element " .. i)
-      for j, v in ipairs(struct) do
-        local size = field_sizes[v]
-        elem:add(v, buf(offset, size))
-        offset = offset + size
-      end
+  assert(len > 0, "Logic error in dbrinfo[]")
+
+  local offset = 0
+  for i=1,dcount do
+    -- TODO: meta-data only before first element
+    local elem = t:add(element, buf(offset, len), "", "Element " .. i)
+    for j, v in ipairs(struct) do
+      local size = field_sizes[v]
+      elem:add(v, buf(offset, size))
+      offset = offset + size
     end
   end
 end
@@ -590,7 +596,7 @@ local function careadnotify (buf, pkt, t, hlen, msglen, dcount)
   else
     -- server message (reply)
     t:add(feca , buf(8,4))
-    parse_data(buf, pkt, t, hlen, msglen, dcount:uint(), data_type:uint())
+    parse_data(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
     pkt.cols.info:append("Read Reply(ioid="..buf(12,4):uint().."), ")
   end
 end
@@ -608,7 +614,7 @@ local function cawritenotify (buf, pkt, t, hlen, msglen, dcount)
   else
     -- client message (request)
     t:add(fsid , buf(8,4))
-    parse_data(buf, pkt, t, hlen, msglen, dcount:uint(), data_type:uint())
+    parse_data(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
     pkt.cols.info:append("Write Request(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
   end
 end
@@ -620,7 +626,7 @@ local function cawrite (buf, pkt, t, hlen, msglen, dcount)
   t:add(fcnt, dcount)
   t:add(fioid, buf(12,4))
   t:add(fsid , buf(8,4))
-  parse_data(buf, pkt, t, hlen, msglen, dcount:uint(), data_type:uint())
+  parse_data(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
   pkt.cols.info:append("Write(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
 end
 
@@ -651,7 +657,7 @@ local function caevent (buf, pkt, t, hlen, msglen, dcount)
     -- the last monitor update after subscription cancel
     pkt.cols.info:append("Event Final(sub="..buf(12,4):uint().."), ")
   else
-    parse_data(buf, pkt, t, hlen, msglen, dcount:uint(), data_type:uint())
+    parse_data(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
     pkt.cols.info:append("Event(sub="..buf(12,4):uint().."), ")
   end
 end
