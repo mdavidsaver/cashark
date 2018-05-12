@@ -293,6 +293,18 @@ local field_sizes = {
   [value_double] = 8
 }
 
+-- the TvbRange has the value, the ProtoField knows how to format it,
+-- but doesn't provide us with a way to extract this
+local dbf_render = {
+  [value_string] = function(buf) return "\""..buf:stringz().."\"" end,
+  [value_char] = function(buf) return buf:uint() end,
+  [value_short] = function(buf) return buf:uint() end,
+  [value_long] = function(buf) return buf:uint() end,
+  [value_enum] = function(buf) return buf:uint() end,
+  [value_float] = function(buf) return buf:float() end,
+  [value_double] = function(buf) return buf:float() end,
+}
+
 local function map(func, array)
   local new_array = {}
   for i,v in ipairs(array) do
@@ -563,7 +575,7 @@ local function parse_dbr (buf, pkt, t, dcount, data_type)
 
   if not valuefield then
     t:add(fdata, buf):add_expert_info(PI_MALFORMED, PI_WARN, "Unknown DBR type")
-    return
+    return "<???>"
   end
 
   -- process meta-data fields
@@ -583,10 +595,18 @@ local function parse_dbr (buf, pkt, t, dcount, data_type)
 
   -- process each value
   local vlen = field_sizes[valuefield]
-  for _=1,dcount do
+  local vrender = dbf_render[valuefield]
+  local sval = ""
+  for i=1,dcount do
+    if i==1 then
+      sval = vrender(buf(offset, vlen))
+    elseif i==2 then
+      sval = sval..", ..."
+    end
     t:add(valuefield, buf(offset, vlen))
     offset = offset + vlen
   end
+  return sval
 end
 
 local function careadnotify (buf, pkt, t, hlen, msglen, dcount)
@@ -602,8 +622,8 @@ local function careadnotify (buf, pkt, t, hlen, msglen, dcount)
   else
     -- server message (reply)
     t:add(feca , buf(8,4))
-    parse_dbr(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
-    pkt.cols.info:append("Read Reply(ioid="..buf(12,4):uint().."), ")
+    local sval = parse_dbr(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
+    pkt.cols.info:append("Read Reply(ioid="..buf(12,4):uint()..", value=["..sval.."]), ")
   end
 end
 
@@ -620,8 +640,8 @@ local function cawritenotify (buf, pkt, t, hlen, msglen, dcount)
   else
     -- client message (request)
     t:add(fsid , buf(8,4))
-    parse_dbr(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
-    pkt.cols.info:append("Write Request(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
+    local sval = parse_dbr(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
+    pkt.cols.info:append("Write Request(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint()..", value=["..sval.."]), ")
   end
 end
 
@@ -632,8 +652,8 @@ local function cawrite (buf, pkt, t, hlen, msglen, dcount)
   t:add(fcnt, dcount)
   t:add(fioid, buf(12,4))
   t:add(fsid , buf(8,4))
-  parse_dbr(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
-  pkt.cols.info:append("Write(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
+  local sval = parse_dbr(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
+  pkt.cols.info:append("Write(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint()..", value=["..sval.."]), ")
 end
 
 local function caevent (buf, pkt, t, hlen, msglen, dcount)
@@ -663,8 +683,8 @@ local function caevent (buf, pkt, t, hlen, msglen, dcount)
     -- the last monitor update after subscription cancel
     pkt.cols.info:append("Event Final(sub="..buf(12,4):uint().."), ")
   else
-    parse_dbr(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
-    pkt.cols.info:append("Event(sub="..buf(12,4):uint().."), ")
+    local sval = parse_dbr(buf(hlen, msglen), pkt, t, dcount:uint(), data_type:uint())
+    pkt.cols.info:append("Event(sub="..buf(12,4):uint()..", value=["..sval.."]), ")
   end
 end
 
