@@ -354,6 +354,11 @@ ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
 
 local specials
 
+-- Process either 16 or 24 bytes of a CA message.
+-- Returns a triple of
+-- 1. the Length of the message body
+-- 2. the number of data elements in the body
+-- 3. the length of the header (either 16 or 24)
 local function decodeheader(buf)
   local msglen = buf(2,2)
   local dcount = buf(6,2)
@@ -361,7 +366,7 @@ local function decodeheader(buf)
   local hlen=16
   if msglen:uint()==0xffff and dcount:uint()==0
   then
-    if(buf:len()<24) then return buf:len()-24 end
+    if(buf:len()<24) then return buf:len()-24 end -- TODO: better handling of truncated/invalid
     msglen = buf(16,4)
     dcount = buf(20,4)
     hlen=24
@@ -385,11 +390,12 @@ local function decode (buf, pkt, root)
   
   if buf:len()<hlen+msglen:uint()
   then
+    -- incomplete message, wait for remain body
     return (buf:len()-(hlen+msglen:uint()))
   end
 
   local t = root:add(ca, buf(0,hlen+msglen:uint()))
-    
+
   t:add(fcmd, cmd)
   t:add(fsize,msglen)
   
@@ -446,8 +452,8 @@ function ca.dissector (buf, pkt, root)
 
     if consumed<0
     then
-      -- Wireshark documentation lists this as the prefered was
-      -- to indicate TCP reassembly.  However, as of version 1.2.11
+      -- Wireshark documentation lists return negative as the prefered way
+      -- to indicate TCP reassembly.  As of version 1.2.11
       -- this does not work for LUA disectors.  However, the pinfo
       -- mechanism does.
       --return consumed
