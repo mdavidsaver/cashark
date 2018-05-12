@@ -511,7 +511,7 @@ local function casearch (buf, pkt, t, hlen, msglen, dcount)
     t:add(frep, buf(4,2))
     t:add(fver, dcount)
     t:add(fcid, buf(8,4))
-    tp2 = t:add(fp2 , buf(12,4))
+    local tp2 = t:add(fp2 , buf(12,4))
     if(buf(8,4):uint()~=buf(12,4):uint())
     then
       tp2:add_expert_info(PI_MALFORMED, PI_ERROR, "CID mismatch")
@@ -536,11 +536,10 @@ local function cacreatechan (buf, pkt, t, hlen, msglen, dcount)
     t:add(fcid , buf(8,4))
     t:add(fver , buf(12,4))
     t:add(fpv, buf(hlen,msglen))
-    pvname=buf(hlen,msglen):string()
+    local pvname=buf(hlen,msglen):string()
     pkt.cols.info:append("Create Request('"..pvname)
     pkt.cols.info:append("', cid="..buf(8,4):uint().."), ")
   end
-  return dir
 end
 
 local function carights (buf, pkt, t, hlen, msglen, dcount)
@@ -685,11 +684,11 @@ local function caerror (buf, pkt, t, hlen, msglen, dcount)
   t:add(fcid, buf(8,4))
   t:add(feca, buf(12,4))
 
-  emsglen, edcount, ehlen = decodeheader(buf(16):tvb())
+  local emsglen, edcount, ehlen = decodeheader(buf(16):tvb())
 
-  emsg = buf(16,ehlen):tvb()
+  local emsg = buf(16,ehlen):tvb()
 
-  ehead = t:add(ca, emsg)
+  local ehead = t:add(ca, emsg)
 
   ehead:add(fcmd, emsg(0,2))
   ehead:add(fsize,emsglen)
