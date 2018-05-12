@@ -321,7 +321,11 @@ end
 -- So don't register the udp dissector, which is only necessary
 -- when using a non-standard port for searches.
 --pva:register_heuristic("udp", test_pva)
-pva:register_heuristic("tcp", test_pva)
+local status, err = pcall(function() pva:register_heuristic("tcp", test_pva) end)
+if not status then
+  print("Failed to register PVA heuristic dissector.  Must manually specify TCP port! (try newer wireshark?)")
+  print(err)
+end
 
 local function decodeStatus (buf, pkt, t, isbe)
   local code = buf(0,1):uint()
