@@ -302,11 +302,13 @@ local dbf_render = {
 
 local function map(func, array)
   local new_array = {}
-  for i,v in ipairs(array) do
+  -- note: must use pairs() as ipairs() silently ignores array[0]!!!
+  for i,v in pairs(array) do
     new_array[i] = func(v)
   end
   return new_array
 end
+
 
 local bit = {[0] = "Clear", [1] = "Set"}
 
@@ -593,6 +595,10 @@ local function parse_dbr (buf, pkt, t, dcount, data_type)
   local vrender = dbf_render[valuefield]
   local sval = ""
   for i=1,dcount do
+    if i==dcount and offset+vlen > buf:len() then
+      -- the last element may have trailing nils dropped (DBF_STRING)
+      vlen = buf:len()-offset
+    end
     if i==1 then
       sval = vrender(buf(offset, vlen))
     elseif i==2 then
