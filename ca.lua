@@ -30,6 +30,7 @@ local bcommands = {
   [0x14] = "User",
   [0x15] = "Host",
   [0x16] = "Rights",
+  [0x17] = "Echo",
   [0x18] = "Repeater Register",
   [0x1a] = "Create Channel Fail",
   [0x1b] = "Server Disconnect"
@@ -99,52 +100,11 @@ local ecacodes = {
   [0x1e0] = "ECA_UNRESPTMO"
 }
 
-local dbrcodes = {
-  [0] = "STRING",
-  [1] = "INT",
-  [1] = "SHORT",
-  [2] = "FLOAT",
-  [3] = "ENUM",
-  [4] = "CHAR",
-  [5] = "LONG",
-  [6] = "DOUBLE",
-  [7] = "STS_STRING",
-  [8] = "STS_INT",
-  [8] = "STS_SHORT",
-  [9] = "STS_FLOAT",
-  [10] = "STS_ENUM",
-  [11] = "STS_CHAR",
-  [12] = "STS_LONG",
-  [13] = "STS_DOUBLE",
-  [14] = "TIME_STRING",
-  [15] = "TIME_INT",
-  [15] = "TIME_SHORT",
-  [16] = "TIME_FLOAT",
-  [17] = "TIME_ENUM",
-  [18] = "TIME_CHAR",
-  [19] = "TIME_LONG",
-  [20] = "TIME_DOUBLE",
-  [21] = "GR_STRING",
-  [22] = "GR_INT",
-  [22] = "GR_SHORT",
-  [23] = "GR_FLOAT",
-  [24] = "GR_ENUM",
-  [25] = "GR_CHAR",
-  [26] = "GR_LONG",
-  [27] = "GR_DOUBLE",
-  [28] = "CTRL_STRING",
-  [29] = "CTRL_INT",
-  [29] = "CTRL_SHORT",
-  [30] = "CTRL_FLOAT",
-  [31] = "CTRL_ENUM",
-  [32] = "CTRL_CHAR",
-  [33] = "CTRL_LONG",
-  [34] = "CTRL_DOUBLE",
-  [35] = "PUT_ACKT",
-  [36] = "PUT_ACKS",
-  [37] = "STSACK_STRING",
-  [38] = "CLASS_NAME"
-}
+-- String sizes
+local max_string_size = 40
+local max_unit_size = 8
+local max_enum_string_size = 26
+local max_enum_states = 16
 
 local rights = {
   [0] = "NA",
@@ -152,6 +112,190 @@ local rights = {
   [2] = "WO",
   [3] = "RW"
 }
+
+-- Data fields
+local status = ProtoField.int16("ca.data.status", "Status", base.DEC)
+local severity = ProtoField.int16("ca.data.severity", "Severity", base.DEC)
+local timestamp_sec = ProtoField.uint32("ca.data.timestamp.sec", "Timestamp Seconds", base.DEC)
+local timestamp_nsec = ProtoField.uint32("ca.data.timestamp.nsec", "Timestamp Nanoseconds", base.DEC)
+local unit = ProtoField.string("ca.data.units", "Unit")
+local precision = ProtoField.int16("ca.data.precision", "Precision", base.DEC)
+local no_str = ProtoField.int16("ca.data.no_str", "Number of Strings", base.DEC)
+local enum_str = ProtoField.string("ca.data.no_str", "Enum String")
+local padding_char = ProtoField.uint8("ca.data.padding", "Padding", base.DEC)
+local padding_short = ProtoField.uint16("ca.data.padding", "Padding", base.DEC)
+local padding_long = ProtoField.uint32("ca.data.padding", "Padding", base.DEC)
+
+local upper_disp_limit_char = ProtoField.int8("ca.data.upper_disp_limit", "Upper Display Limit", base.DEC)
+local lower_disp_limit_char = ProtoField.int8("ca.data.lower_disp_limit", "Lower Display Limit", base.DEC)
+local upper_alarm_limit_char = ProtoField.int8("ca.data.upper_alarm_limit", "Upper Alarm Limit", base.DEC)
+local upper_warning_limit_char = ProtoField.int8("ca.data.upper_warning_limit", "Upper Warning Limit", base.DEC)
+local lower_warning_limit_char = ProtoField.int8("ca.data.lower_warning_limit", "Lower Warning Limit", base.DEC)
+local lower_alarm_limit_char = ProtoField.int8("ca.data.lower_alarm_limit", "Lower Alarm Limit", base.DEC)
+local upper_ctrl_limit_char = ProtoField.int8("ca.data.upper_ctr_limit", "Upper Control Limit", base.DEC)
+local lower_ctrl_limit_char = ProtoField.int8("ca.data.lower_ctrl_limit", "Lower Control Limit", base.DEC)
+
+local upper_disp_limit_short = ProtoField.int16("ca.data.upper_disp_limit", "Upper Display Limit", base.DEC)
+local lower_disp_limit_short = ProtoField.int16("ca.data.lower_disp_limit", "Lower Display Limit", base.DEC)
+local upper_alarm_limit_short = ProtoField.int16("ca.data.upper_alarm_limit", "Upper Alarm Limit", base.DEC)
+local upper_warning_limit_short = ProtoField.int16("ca.data.upper_warning_limit", "Upper Warning Limit", base.DEC)
+local lower_warning_limit_short = ProtoField.int16("ca.data.lower_warning_limit", "Lower Warning Limit", base.DEC)
+local lower_alarm_limit_short = ProtoField.int16("ca.data.lower_alarm_limit", "Lower Alarm Limit", base.DEC)
+local upper_ctrl_limit_short = ProtoField.int16("ca.data.upper_ctr_limit", "Upper Control Limit", base.DEC)
+local lower_ctrl_limit_short = ProtoField.int16("ca.data.lower_ctrl_limit", "Lower Control Limit", base.DEC)
+
+local upper_disp_limit_long = ProtoField.int32("ca.data.upper_disp_limit", "Upper Display Limit", base.DEC)
+local lower_disp_limit_long = ProtoField.int32("ca.data.lower_disp_limit", "Lower Display Limit", base.DEC)
+local upper_alarm_limit_long = ProtoField.int32("ca.data.upper_alarm_limit", "Upper Alarm Limit", base.DEC)
+local upper_warning_limit_long = ProtoField.int32("ca.data.upper_warning_limit", "Upper Warning Limit", base.DEC)
+local lower_warning_limit_long = ProtoField.int32("ca.data.lower_warning_limit", "Lower Warning Limit", base.DEC)
+local lower_alarm_limit_long = ProtoField.int32("ca.data.lower_alarm_limit", "Lower Alarm Limit", base.DEC)
+local upper_ctrl_limit_long = ProtoField.int32("ca.data.upper_ctr_limit", "Upper Control Limit", base.DEC)
+local lower_ctrl_limit_long = ProtoField.int32("ca.data.lower_ctrl_limit", "Lower Control Limit", base.DEC)
+
+local upper_disp_limit_float = ProtoField.float("ca.data.upper_disp_limit", "Upper Display Limit", base.DEC)
+local lower_disp_limit_float = ProtoField.float("ca.data.lower_disp_limit", "Lower Display Limit", base.DEC)
+local upper_alarm_limit_float = ProtoField.float("ca.data.upper_alarm_limit", "Upper Alarm Limit", base.DEC)
+local upper_warning_limit_float = ProtoField.float("ca.data.upper_warning_limit", "Upper Warning Limit", base.DEC)
+local lower_warning_limit_float = ProtoField.float("ca.data.lower_warning_limit", "Lower Warning Limit", base.DEC)
+local lower_alarm_limit_float = ProtoField.float("ca.data.lower_alarm_limit", "Lower Alarm Limit", base.DEC)
+local upper_ctrl_limit_float = ProtoField.float("ca.data.upper_ctr_limit", "Upper Control Limit", base.DEC)
+local lower_ctrl_limit_float = ProtoField.float("ca.data.lower_ctrl_limit", "Lower Control Limit", base.DEC)
+
+local upper_disp_limit_double = ProtoField.double("ca.data.upper_disp_limit", "Upper Display Limit", base.DEC)
+local lower_disp_limit_double = ProtoField.double("ca.data.lower_disp_limit", "Lower Display Limit", base.DEC)
+local upper_alarm_limit_double = ProtoField.double("ca.data.upper_alarm_limit", "Upper Alarm Limit", base.DEC)
+local upper_warning_limit_double = ProtoField.double("ca.data.upper_warning_limit", "Upper Warning Limit", base.DEC)
+local lower_warning_limit_double = ProtoField.double("ca.data.lower_warning_limit", "Lower Warning Limit", base.DEC)
+local lower_alarm_limit_double = ProtoField.double("ca.data.lower_alarm_limit", "Lower Alarm Limit", base.DEC)
+local upper_ctrl_limit_double = ProtoField.double("ca.data.upper_ctr_limit", "Upper Control Limit", base.DEC)
+local lower_ctrl_limit_double = ProtoField.double("ca.data.lower_ctrl_limit", "Lower Control Limit", base.DEC)
+
+local value_string = ProtoField.string("ca.data.value", "Value", base.UNICODE)
+local value_char = ProtoField.uint8("ca.data.value", "Value", base.DEC)
+local value_short = ProtoField.int16("ca.data.value", "Value", base.DEC)
+local value_long = ProtoField.int32("ca.data.value", "Value", base.DEC)
+local value_enum = ProtoField.uint16("ca.data.value", "Value", base.DEC)
+local value_float = ProtoField.float("ca.data.value", "Value")
+local value_double = ProtoField.double("ca.data.value", "Value")
+
+-- Data Struct Descriptions
+local gr_enum = {status, severity, no_str}
+for var=1,max_enum_states do
+    table.insert(gr_enum, enum_str)
+end
+table.insert(gr_enum, value_enum)
+
+local dbrtypes = {
+  [0] = {"STRING", {value_string}},
+  [1] = {"INT", {value_short}},
+  [1] = {"SHORT", {value_short}},
+  [2] = {"FLOAT", {value_float}},
+  [3] = {"ENUM", {value_enum}},
+  [4] = {"CHAR", {value_char}},
+  [5] = {"LONG", {value_long}},
+  [6] = {"DOUBLE", {value_double}},
+  [7] = {"STS_STRING", {status, severity, value_string}},
+  [8] = {"STS_INT", {status, severity, value_short}},
+  [8] = {"STS_SHORT", {status, severity, value_short}},
+  [9] = {"STS_FLOAT", {status, severity, value_long}},
+  [10] = {"STS_ENUM", {status, severity, value_enum}},
+  [11] = {"STS_CHAR", {status, severity, value_char}},
+  [12] = {"STS_LONG", {status, severity, value_long}},
+  [13] = {"STS_DOUBLE", {status, severity, value_double}},
+  [14] = {"TIME_STRING", {status, severity, timestamp_sec, timestamp_nsec, value_string}},
+  [15] = {"TIME_INT", {status, severity, timestamp_sec, timestamp_nsec, padding_short, value_short}},
+  [15] = {"TIME_SHORT", {status, severity, timestamp_sec, timestamp_nsec, padding_short, value_short}},
+  [16] = {"TIME_FLOAT", {status, severity, timestamp_sec, timestamp_nsec, value_float}},
+  [17] = {"TIME_ENUM", {status, severity, timestamp_sec, timestamp_nsec, padding_short, value_enum}},
+  [18] = {"TIME_CHAR", {status, severity, timestamp_sec, timestamp_nsec, padding_short, padding_char, value_char}},
+  [19] = {"TIME_LONG", {status, severity, timestamp_sec, timestamp_nsec, value_long}},
+  [20] = {"TIME_DOUBLE", {status, severity, timestamp_sec, timestamp_nsec, padding_long, value_double}},
+  [21] = {"GR_STRING", {status, severity, value_string}},
+  [22] = {"GR_INT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, value_short}},
+  [22] = {"GR_SHORT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, value_short}},
+  [23] = {"GR_FLOAT", {status, severity, precision, padding_short, unit, upper_disp_limit_float, lower_disp_limit_float, upper_alarm_limit_float, upper_warning_limit_float, lower_warning_limit_float, lower_alarm_limit_float, value_float}},
+  [24] = {"GR_ENUM", gr_enum},
+  [25] = {"GR_CHAR", {status, severity, unit, upper_disp_limit_char, lower_disp_limit_char, upper_alarm_limit_char, upper_warning_limit_char, lower_warning_limit_char, lower_alarm_limit_char, padding_char, value_char}},
+  [26] = {"GR_LONG", {status, severity, unit, upper_disp_limit_long, lower_disp_limit_long, upper_alarm_limit_long, upper_warning_limit_long, lower_warning_limit_long, lower_alarm_limit_long, value_long}},
+  [27] = {"GR_DOUBLE", {status, severity, unit, upper_disp_limit_double, lower_disp_limit_double, upper_alarm_limit_double, upper_warning_limit_double, lower_warning_limit_double, lower_alarm_limit_double, value_double}},
+  [28] = {"CTRL_STRING", {status, severity, value_string}},
+  [29] = {"CTRL_INT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, upper_ctrl_limit_short, lower_ctrl_limit_short, value_short}},
+  [29] = {"CTRL_SHORT", {status, severity, unit, upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short, upper_ctrl_limit_short, lower_ctrl_limit_short, value_short}},
+  [30] = {"CTRL_FLOAT", {status, severity, precision, padding_short, unit, upper_disp_limit_float, lower_disp_limit_float, upper_alarm_limit_float, upper_warning_limit_float, lower_warning_limit_float, lower_alarm_limit_float, upper_ctrl_limit_float, lower_ctrl_limit_float, value_float}},
+  [31] = {"CTRL_ENUM", gr_enum},
+  [32] = {"CTRL_CHAR", {status, severity, unit, upper_disp_limit_char, lower_disp_limit_char, upper_alarm_limit_char, upper_warning_limit_char, lower_warning_limit_char, lower_alarm_limit_char, upper_ctrl_limit_char, lower_ctrl_limit_char, padding_char, value_char}},
+  [33] = {"CTRL_LONG", {status, severity, unit, upper_disp_limit_long, lower_disp_limit_long, upper_alarm_limit_long, upper_warning_limit_long, lower_warning_limit_long, lower_alarm_limit_long, upper_ctrl_limit_long, lower_ctrl_limit_long, value_long}},
+  [34] = {"CTRL_DOUBLE", {status, severity, precision, padding_short, unit, upper_disp_limit_double, lower_disp_limit_double, upper_alarm_limit_double, upper_warning_limit_double, lower_warning_limit_double, lower_alarm_limit_double, upper_ctrl_limit_double, lower_ctrl_limit_double, value_double}},
+  [35] = {"PUT_ACKT", {}},
+  [36] = {"PUT_ACKS", {}},
+  [37] = {"STSACK_STRING", {}},
+  [38] = {"CLASS_NAME", {}}
+}
+
+local field_sizes = {
+  [status] = 2,
+  [severity] = 2,
+  [timestamp_sec] = 4,
+  [timestamp_nsec] = 4,
+  [unit] = max_unit_size,
+  [precision] = 2,
+  [no_str] = 2,
+  [enum_str] = max_enum_str_size,
+  [padding_char] = 1,
+  [padding_short] = 2,
+  [padding_long] = 4,
+  [upper_disp_limit_char] = 1,
+  [lower_disp_limit_char] = 1,
+  [upper_alarm_limit_char] = 1,
+  [upper_warning_limit_char] = 1,
+  [lower_warning_limit_char] = 1,
+  [upper_ctrl_limit_char] = 1,
+  [lower_ctrl_limit_char] = 1,
+  [upper_disp_limit_short] = 2,
+  [lower_disp_limit_short] = 2,
+  [upper_alarm_limit_short] = 2,
+  [upper_warning_limit_short] = 2,
+  [lower_warning_limit_short] = 2,
+  [upper_ctrl_limit_short] = 2,
+  [lower_ctrl_limit_short] = 2,
+  [upper_disp_limit_long] = 4,
+  [lower_disp_limit_long] = 4,
+  [upper_alarm_limit_long] = 4,
+  [upper_warning_limit_long] = 4,
+  [lower_warning_limit_long] = 4,
+  [upper_ctrl_limit_long] = 4,
+  [lower_ctrl_limit_long] = 4,
+  [upper_disp_limit_float] = 4,
+  [lower_disp_limit_float] = 4,
+  [upper_alarm_limit_float] = 4,
+  [upper_warning_limit_float] = 4,
+  [lower_warning_limit_float] = 4,
+  [upper_ctrl_limit_float] = 4,
+  [lower_ctrl_limit_float] = 4,
+  [upper_disp_limit_double] = 8,
+  [lower_disp_limit_double] = 8,
+  [upper_alarm_limit_double] = 8,
+  [upper_warning_limit_double] = 8,
+  [lower_warning_limit_double] = 8,
+  [upper_ctrl_limit_double] = 8,
+  [lower_ctrl_limit_double] = 8,
+  [value_string] = max_string_size,
+  [value_char] = 1,
+  [value_short] = 2,
+  [value_long] = 4,
+  [value_enum] = 2,
+  [value_float] = 2,
+  [value_double] = 8
+}
+
+local function map(func, array)
+  local new_array = {}
+  for i,v in ipairs(array) do
+    new_array[i] = func(v)
+  end
+  return new_array
+end
 
 local bit = {[0] = "Clear", [1] = "Set"}
 
@@ -172,7 +316,7 @@ local fport = ProtoField.uint16("ca.serv.port", "Server Port")
 local brep  = { [0xa] = "Success or failure", [0x5] = "Only for Success" }
 local frep  = ProtoField.uint16("ca.doreply", "Reply", base.HEX, brep)
 local fver  = ProtoField.uint16("ca.version", "Version")
-local fdtype= ProtoField.uint16("ca.dtype", "DBR Type", base.DEC, dbrcodes)
+local fdtype= ProtoField.uint16("ca.dtype", "DBR Type", base.DEC, map(function(x) return x[1] end, dbrtypes))
 local fright= ProtoField.uint32("ca.rights", "Rights", base.HEX, rights)
 local fcid  = ProtoField.uint32("ca.cid", "Client Channel ID")
 local fsid  = ProtoField.uint32("ca.sid", "Server Channel ID")
@@ -191,10 +335,21 @@ local fmask_log = ProtoField.uint16("ca.mask.log", "DBE_LOG", base.DEC, bit, 0x2
 local fmask_alm = ProtoField.uint16("ca.mask.alarm", "DBE_ALARM", base.DEC, bit, 0x4)
 local fmask_prp = ProtoField.uint16("ca.mask.prop", "DBE_PROP", base.DEC, bit, 0x8)
 
+local element = ProtoField.bytes("ca.data.element", "Element", base.None)
+
 ca.fields = {fcmd, fsize, ftype, fcnt, fp1, fp2, fdata,
-       fdbr, fpv, fserv, fport, frep, fver, fdtype, fright, fcid, fsid, fioid, fsub,
-       fbeac, feca, fmsg, fstr,
-       fmask, fmask_val, fmask_log, fmask_alm, fmask_prp
+    fdbr, fpv, fserv, fport, frep, fver, fdtype, fright, fcid, fsid, fioid, fsub,
+    fbeac, feca, fmsg, fstr,
+    fmask, fmask_val, fmask_log, fmask_alm, fmask_prp,
+    status, severity, timestamp_sec, timestamp_nsec, unit, precision, no_str, enum_str,
+    padding_char, padding_short, padding_long,
+    upper_disp_limit_char, lower_disp_limit_char, upper_alarm_limit_char, upper_warning_limit_char, lower_warning_limit_char, lower_alarm_limit_char,
+    upper_disp_limit_short, lower_disp_limit_short, upper_alarm_limit_short, upper_warning_limit_short, lower_warning_limit_short, lower_alarm_limit_short,
+    upper_disp_limit_long, lower_disp_limit_long, upper_alarm_limit_long, upper_warning_limit_long, lower_warning_limit_long, lower_alarm_limit_long,
+    upper_disp_limit_float, lower_disp_limit_float, upper_alarm_limit_float, upper_warning_limit_float, lower_warning_limit_float, lower_alarm_limit_float,
+    upper_disp_limit_double, lower_disp_limit_double, upper_alarm_limit_double, upper_warning_limit_double, lower_warning_limit_double, lower_alarm_limit_double,
+    value_string, value_char, value_short, value_long, value_enum, value_float, value_double,
+    element
 }
 
 local specials
@@ -395,8 +550,30 @@ local function cacleanchan (buf, pkt, t, hlen, msglen, dcount)
   pkt.cols.info:append("Clear Channel(cid="..buf(12,4):uint()..", sid="..buf(8,4):uint().."), ")
 end
 
+local function parse_data (buf, pkt, t, hlen, msglen, dcount, data_type)
+  local struct = dbrtypes[data_type][2]
+  local len = 0
+  for j, v in ipairs(struct) do
+    len = len + field_sizes[v]
+  end
+  if len == 0 then
+    t:add(fdata, buf(hlen, msglen))
+  else
+    local offset = hlen
+    for i=1,dcount do
+      local elem = t:add(element, buf(offset, len), "", "Element " .. i)
+      for j, v in ipairs(struct) do
+        local size = field_sizes[v]
+        elem:add(v, buf(offset, size))
+        offset = offset + size
+      end
+    end
+  end
+end
+
 local function careadnotify (buf, pkt, t, hlen, msglen, dcount)
-  t:add(fdtype,buf(4,2))
+  local data_type = buf(4,2)
+  t:add(fdtype, data_type)
   t:add(fcnt, dcount)
   t:add(fioid, buf(12,4))
   if msglen==0 and dcount~=0
@@ -407,13 +584,14 @@ local function careadnotify (buf, pkt, t, hlen, msglen, dcount)
   else
     -- server message (reply)
     t:add(feca , buf(8,4))
-    t:add(fdata, buf(hlen,msglen))
+    parse_data(buf, pkt, t, hlen, msglen, dcount:uint(), data_type:uint())
     pkt.cols.info:append("Read Reply(ioid="..buf(12,4):uint().."), ")
   end
 end
 
 local function cawritenotify (buf, pkt, t, hlen, msglen, dcount)
-  t:add(fdtype,buf(4,2))
+  local data_type = buf(4,2)
+  t:add(fdtype, data_type)
   t:add(fcnt, dcount)
   t:add(fioid, buf(12,4))
   if msglen==0 and dcount~=0
@@ -424,23 +602,25 @@ local function cawritenotify (buf, pkt, t, hlen, msglen, dcount)
   else
     -- client message (request)
     t:add(fsid , buf(8,4))
-    t:add(fdata, buf(hlen,msglen))
+    parse_data(buf, pkt, t, hlen, msglen, dcount:uint(), data_type:uint())
     pkt.cols.info:append("Write Request(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
   end
 end
 
 local function cawrite (buf, pkt, t, hlen, msglen, dcount)
   -- client message (request)
-  t:add(fdtype,buf(4,2))
+  local data_type = buf(4,2)
+  t:add(fdtype, data_type)
   t:add(fcnt, dcount)
   t:add(fioid, buf(12,4))
   t:add(fsid , buf(8,4))
-  t:add(fdata, buf(hlen,msglen))
+  parse_data(buf, pkt, t, hlen, msglen, dcount:uint(), data_type:uint())
   pkt.cols.info:append("Write(sid="..buf(8,4):uint()..", ioid="..buf(12,4):uint().."), ")
 end
 
 local function caevent (buf, pkt, t, hlen, msglen, dcount)
-  t:add(fdtype,buf(4,2))
+  local data_type = buf(4,2)
+  t:add(fdtype, data_type)
   t:add(fcnt, dcount)
   t:add(fsub, buf(12,4))
   if msglen==16
@@ -465,7 +645,7 @@ local function caevent (buf, pkt, t, hlen, msglen, dcount)
     -- the last monitor update after subscription cancel
     pkt.cols.info:append("Event Final(sub="..buf(12,4):uint().."), ")
   else
-    t:add(fdata, buf(hlen,msglen))
+    parse_data(buf, pkt, t, hlen, msglen, dcount:uint(), data_type:uint())
     pkt.cols.info:append("Event(sub="..buf(12,4):uint().."), ")
   end
 end
