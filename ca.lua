@@ -284,7 +284,7 @@ local field_sizes = {
   [value_short] = 2,
   [value_long] = 4,
   [value_enum] = 2,
-  [value_float] = 2,
+  [value_float] = 4,
   [value_double] = 8
 }
 
