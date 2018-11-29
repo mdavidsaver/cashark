@@ -393,7 +393,7 @@ end
 -- returns number of bytes consumed or a negative number giving
 -- the number of bytes needed to complete the message
 local function decode (buf, pkt, root)
-  if buf:len()<16 then return 0 end
+  if buf:len()<16 then return -DESEGMENT_ONE_MORE_SEGMENT end
     
   local cmd = buf(0,2)
   local msglen
