@@ -586,7 +586,8 @@ local function parse_dbr (buf, pkt, t, dcount, data_type)
     local flen = field_sizes[mfld]
     if mfld == timestamp then
       -- special handling for timestamp
-      local st = t:add(timestamp, buf(offset, flen)):set_text("Timestamp: "..os.date("%c", buf(offset+0, 4):uint()+631152000))
+      local st = t:add(timestamp, buf(offset, flen))
+      st:set_text("Timestamp: "..os.date("%c", buf(offset+0, 4):uint()+631152000))
       st:add(timestamp_sec , buf(offset+0, 4))
       st:add(timestamp_nsec, buf(offset+4, 4))
     else
