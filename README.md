@@ -22,8 +22,6 @@ messages without observing the start of the connection.  Thus this plugin
 can not fully decode all messages.  Currently only some messages are fully decoded.
 Others decode with only generic field names.
 
-DBR data in get, put, and monitor operations is not decoded.
-
 Reporting bugs
 --------------
 
