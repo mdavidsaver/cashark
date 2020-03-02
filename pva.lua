@@ -307,7 +307,7 @@ end
 -- avoid having to select "Decode as..." every time :)
 local function test_pva (buf, pkt, root)
   -- check for 8 byte minimum length, prefix [0xca, 1, _, cmd] where cmd is a valid command #
-  if buf:len()<8 or buf(0,1):uint()~=0xca or buf(1,1):uint()~=1 or not bcommands[buf(3,1):uint()]
+  if buf:len()<8 or buf(0,1):uint()~=0xca or buf(1,1):uint()==0 or not bcommands[buf(3,1):uint()]
   then
       return false
   end
