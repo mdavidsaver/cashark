@@ -230,6 +230,7 @@ function pva.dissector (buf, pkt, root)
 
   pkt.cols.protocol = pva.name
   pkt.cols.info:clear()
+  pkt.cols.info:append(pkt.src_port.." -> "..pkt.dst_port.." ")
   if bit.band(buf(2,1):uint(), 0x40)~=0
   then
     pkt.cols.info:append("Server ")
