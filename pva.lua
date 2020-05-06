@@ -484,17 +484,17 @@ end
 
 local function pva_client_op (buf, pkt, t, isbe, cmd)
     local cname = bcommands[cmd]
-    local cid, ioid, subcmd
+    local sid, ioid, subcmd
     if isbe
     then
-        cid = buf(0,4):uint()
+        sid = buf(0,4):uint()
         ioid = buf(4,4):uint()
     else
-        cid = buf(0,4):le_uint()
+        sid = buf(0,4):le_uint()
         ioid = buf(4,4):le_uint()
     end
     subcmd = buf(8,1):uint()
-    t:add(fcid, buf(0,4), cid)
+    t:add(fsid, buf(0,4), sid)
     t:add(fioid, buf(4,4), ioid)
     local cmd = t:add(fsubcmd, buf(8,1), subcmd)
     cmd:add(fsubcmd_proc, buf(8,1), subcmd)
@@ -506,7 +506,7 @@ local function pva_client_op (buf, pkt, t, isbe, cmd)
         t:add(fpvd, buf(9))
     end
 
-    pkt.cols.info:append(string.format("%s(cid=%u, ioid=%u, sub=%02x), ", cname, cid, ioid, subcmd))
+    pkt.cols.info:append(string.format("%s(sid=%u, ioid=%u, sub=%02x), ", cname, sid, ioid, subcmd))
 end
 
 
@@ -541,19 +541,19 @@ end
 
 local function pva_client_op_destroy (buf, pkt, t, isbe, cmd)
     local cname = bcommands[cmd]
-    local cid, ioid;
+    local sid, ioid;
     if isbe
     then
-        cid = buf(0,4):uint()
+        sid = buf(0,4):uint()
         ioid = buf(4,4):uint()
     else
-        cid = buf(0,4):le_uint()
+        sid = buf(0,4):le_uint()
         ioid = buf(4,4):le_uint()
     end
-    t:add(fcid, buf(0,4), cid)
+    t:add(fsid, buf(0,4), sid)
     t:add(fioid, buf(4,4), ioid)
 
-    pkt.cols.info:append(string.format("%s(cid=%u, ioid=%u), ", cname, cid, ioid))
+    pkt.cols.info:append(string.format("%s(sid=%u, ioid=%u), ", cname, sid, ioid))
 end
 
 specials_server = {
