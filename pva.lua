@@ -69,6 +69,7 @@ local fctrldata  = ProtoField.uint32("pva.ctrldata", "Control Data", base.HEX)
 local fsize = ProtoField.uint32("pva.size", "Size", base.DEC)
 local fbody = ProtoField.bytes("pva.body", "Body")
 local fpvd = ProtoField.bytes("pva.pvd", "Data")
+local fguid = ProtoField.bytes("pva.guid", "GUID")
 
 -- common
 local fcid = ProtoField.uint32("pva.cid", "Client Channel ID")
@@ -100,12 +101,16 @@ local fsearch_proto = ProtoField.string("pva.proto", "Transport Protocol")
 local fsearch_cid = ProtoField.uint32("pva.cid", "CID")
 local fsearch_name = ProtoField.string("pva.pv", "Name")
 
+-- For SEARCH_RESPONSE
+local fsearch_found = ProtoField.bool("pva.found", "Found")
+
 pva.fields = {
-    fmagic, fver, fflags, fflag_dir, fflag_end, fflag_msgtype, fflag_segmented, fcmd, fctrlcmd, fctrldata, fsize, fbody, fpvd,
+    fmagic, fver, fflags, fflag_dir, fflag_end, fflag_msgtype, fflag_segmented, fcmd, fctrlcmd, fctrldata, fsize, fbody, fpvd, fguid,
     fcid, fsid, fioid, fsubcmd, fsubcmd_proc, fsubcmd_init, fsubcmd_dstr, fsubcmd_get, fsubcmd_gtpt, fstatus,
     fvalid_bsize, fvalid_isize, fvalid_qos, fvalid_authz,
     fsearch_seq, fsearch_addr, fsearch_port, fsearch_mask, fsearch_mask_repl, fsearch_mask_bcast,
     fsearch_proto, fsearch_cid, fsearch_name,
+    fsearch_found,
 }
 
 local specials_server
@@ -351,7 +356,6 @@ local function decodeStatus (buf, pkt, t, isbe)
 end
 
 local function pva_client_search (buf, pkt, t, isbe, cmd)
-    pkt.cols.info:append("SEARCH('")
     local seq, port
     if isbe then
         seq = buf(0,4):uint()
@@ -360,6 +364,7 @@ local function pva_client_search (buf, pkt, t, isbe, cmd)
         seq = buf(0,4):le_uint()
         port = buf(24,2):le_uint()
     end
+    pkt.cols.info:append("SEARCH("..seq)
 
     t:add(fsearch_seq, buf(0,4), seq)
     local mask = t:add(fsearch_mask, buf(4,1))
@@ -395,10 +400,55 @@ local function pva_client_search (buf, pkt, t, isbe, cmd)
         name, buf = decodeString(buf(4), isbe)
         t:add(fsearch_name, name)
 
-        if i>0 then pkt.cols.info:append("', '") end
-        pkt.cols.info:append(name:string())
+        pkt.cols.info:append(', '..cid..":'"..name:string().."'")
     end
-    pkt.cols.info:append("'), ")
+    pkt.cols.info:append("), ")
+end
+
+local function pva_server_search_response (buf, pkt, t, isbe, cmd)
+    local seq, port
+    if isbe then
+        seq = buf(12,4):uint()
+        port = buf(32,2):uint()
+    else
+        seq = buf(12,4):le_uint()
+        port = buf(32,2):le_uint()
+    end
+    pkt.cols.info:append("SEARCH_RESPONSE("..seq)
+
+    t:add(fguid, buf(0,12))
+    t:add(fsearch_seq, buf(12,4), seq)
+    t:add(fsearch_addr, buf(16,16))
+    t:add(fsearch_port, buf(32,2), port)
+
+    local proto
+    proto, buf = decodeString(buf(34), isbe)
+    t:add(fsearch_proto, proto)
+
+    t:add(fsearch_found, buf(0, 1))
+
+    local npv
+    if isbe then
+        npv = buf(1,2):uint()
+    else
+        npv = buf(1,2):le_uint()
+    end
+    buf = buf(3)
+
+    for i=0,npv-1 do
+        local cid, name
+        print('X', i, npv)
+        if isbe then
+            cid = buf(i*4,4):uint()
+        else
+            cid = buf(i*4,4):le_uint()
+        end
+        t:add(fsearch_cid, buf(i*4,4), cid)
+
+        pkt.cols.info:append(', '..cid)
+    end
+    pkt.cols.info:append(")")
+
 end
 
 local function pva_client_validate (buf, pkt, t, isbe, cmd)
@@ -557,6 +607,7 @@ local function pva_client_op_destroy (buf, pkt, t, isbe, cmd)
 end
 
 specials_server = {
+    [4] = pva_server_search_response,
     [7] = pva_server_create_channel,
     [8] = pva_destroy_channel,
     [10] = pva_server_op,
