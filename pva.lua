@@ -387,20 +387,22 @@ local function pva_client_search (buf, pkt, t, isbe, cmd)
     else
         npv = buf(0,2):le_uint()
     end
-    buf = buf(2)
+    if npv>0 then
+        buf = buf(2)
 
-    for i=0,npv-1 do
-        local cid, name
-        if isbe then
-            cid = buf(0,4):uint()
-        else
-            cid = buf(0,4):le_uint()
+        for i=0,npv-1 do
+            local cid, name
+            if isbe then
+                cid = buf(0,4):uint()
+            else
+                cid = buf(0,4):le_uint()
+            end
+            t:add(fsearch_cid, buf(0,4), cid)
+            name, buf = decodeString(buf(4), isbe)
+            t:add(fsearch_name, name)
+
+            pkt.cols.info:append(', '..cid..":'"..name:string().."'")
         end
-        t:add(fsearch_cid, buf(0,4), cid)
-        name, buf = decodeString(buf(4), isbe)
-        t:add(fsearch_name, name)
-
-        pkt.cols.info:append(', '..cid..":'"..name:string().."'")
     end
     pkt.cols.info:append("), ")
 end
@@ -433,19 +435,21 @@ local function pva_server_search_response (buf, pkt, t, isbe, cmd)
     else
         npv = buf(1,2):le_uint()
     end
-    buf = buf(3)
+    if npv>0 then
+        buf = buf(3)
 
-    for i=0,npv-1 do
-        local cid, name
-        print('X', i, npv)
-        if isbe then
-            cid = buf(i*4,4):uint()
-        else
-            cid = buf(i*4,4):le_uint()
+        for i=0,npv-1 do
+            local cid, name
+
+            if isbe then
+                cid = buf(i*4,4):uint()
+            else
+                cid = buf(i*4,4):le_uint()
+            end
+            t:add(fsearch_cid, buf(i*4,4), cid)
+
+            pkt.cols.info:append(', '..cid)
         end
-        t:add(fsearch_cid, buf(i*4,4), cid)
-
-        pkt.cols.info:append(', '..cid)
     end
     pkt.cols.info:append(")")
 
