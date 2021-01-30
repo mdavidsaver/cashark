@@ -3,7 +3,7 @@
 --
 -- https://github.com/mdavidsaver/cashark
 --
--- Copyright 2015 Michael Davidsaver
+-- Copyright 2021 Michael Davidsaver
 --
 -- Distribution and use subject to the EPICS Open License
 -- See the file LICENSE
@@ -324,8 +324,8 @@ end
 
 -- Wireshark 2.0 errors if the same protocol name is given for two
 -- heuristic dissectors, even for different transports.
--- So don't register the udp dissector, which is only necessary
--- when using a non-standard port for searches.
+-- So don't register the udp dissector.  This prevents decoding of
+-- search replies from pvAccessCPP which sends from a random port
 --pva:register_heuristic("udp", test_pva)
 local status, err = pcall(function() pva:register_heuristic("tcp", test_pva) end)
 if not status then
