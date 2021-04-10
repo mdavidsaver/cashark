@@ -322,14 +322,16 @@ local function test_pva (buf, pkt, root)
   return true
 end
 
--- Wireshark 2.0 errors if the same protocol name is given for two
--- heuristic dissectors, even for different transports.
--- So don't register the udp dissector.  This prevents decoding of
--- search replies from pvAccessCPP which sends from a random port
---pva:register_heuristic("udp", test_pva)
 local status, err = pcall(function() pva:register_heuristic("tcp", test_pva) end)
 if not status then
-  print("Failed to register PVA heuristic dissector.  Must manually specify TCP port! (try newer wireshark?)")
+  print("Failed to register PVA heuristic TCP dissector.  Must manually specify TCP port! (try newer wireshark?)")
+  print(err)
+end
+-- Wireshark 2.0 errors if the same protocol name is given for two
+-- heuristic dissectors, even for different transports.
+local status, err = pcall(function() pva:register_heuristic("udp", test_pva) end)
+if not status then
+  print("Failed to register PVA heuristic UDP dissector.  Must manually specify UDP port! (try newer wireshark?)")
   print(err)
 end
 
