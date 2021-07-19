@@ -583,10 +583,11 @@ local function pva_server_op (buf, pkt, t, isbe, cmd)
     tcmd:add(fsubcmd_dstr, buf(4,1), subcmd)
     tcmd:add(fsubcmd_get, buf(4,1), subcmd)
     tcmd:add(fsubcmd_gtpt, buf(4,1), subcmd)
+    buf = buf(5):tvb()
 
     if cmd~=13 or bit.band(subcmd,0x08)~=0 then
         -- monitor updates have no status
-        buf = decodeStatus(buf(5), pkt, t, isbe)
+        buf = decodeStatus(buf(0), pkt, t, isbe)
     end
     if buf and buf:len()>0 then
         t:add(fbody, buf(0))
