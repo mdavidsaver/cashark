@@ -1,0 +1,27 @@
+name: Test cashark
+
+on: [push, pull_request]
+
+jobs:
+    test:
+        name: Test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Setup
+              run: |
+                sudo apt-get -y update
+                sudo apt-get -y install tshark
+
+            - name: Wireshark Version
+              run: tshark --version
+
+            - name: Test
+              run: ./test-all.sh
+
+            - uses: actions/upload-artifact@v2
+              if: ${{ always() }}
+              with:
+                name: cashark-logs
+                path: '**/*.out'
