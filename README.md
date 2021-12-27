@@ -1,7 +1,7 @@
-Wireshark disector plugin for Channel Access protocol
-=====================================================
+Wireshark dissector plugin for EPICS protocols
+==============================================
 
-Tested with wireshark 1.2.11, 1.8.2, 1.10.8, and 2.2.6.
+Tested with wireshark 1.2.11, 1.8.2, 1.10.8, 2.2.6, 2.6.0, and 3.4.10.
 Works on RHEL 7.4 (wireshark 1.10.14).
 
 Using
@@ -29,10 +29,11 @@ Bug reports are welcome (and patches more so).
 
 Send to "Michael Davidsaver" <mdavidsaver@gmail.com>
 or open a [github] issue.
+Please mention both the wireshark and lua versions.
 
 If possible, please include a packet capture file which will trigger the error.
 
-Note that the PVA disector triggers [bug 10233][bug10233] with wireshark 1.12.1,
+Note that the PVA dissector triggers [bug 10233][bug10233] with wireshark 1.12.1,
 which is known to be fixed with 2.0.
 
 [github]: https://github.com/mdavidsaver/cashark/issues
@@ -41,7 +42,7 @@ which is known to be fixed with 2.0.
 Setup
 -----
 
-To automatically load the CA disector *instead* of using the -X argument.
+To automatically load the CA dissector *instead* of using the -X argument.
 
 On RHEL systems, the wireshark config directory is at /usr/share/wireshark/.
 If the file /usr/share/wireshark/init.lua doesn't exist,
@@ -63,3 +64,37 @@ when wireshark starts.
 
 To install this for a single user create `$HOME/.wireshark/init.lua` with
 a single line "`dofile("ca.lua")`" and place ca.lua in this directory.
+
+tshark
+------
+
+Dissectors may also be used with the CLI interface `tshark`.
+For example, the following prints all CA decode information
+in `test/cabeacon.cap`.
+
+```sh
+tshark -r test/cabeacon.cap \
+ -X lua_script:ca.lua \
+ -PO ca \
+ 'ca'
+```
+
+And with PVA:
+
+```sh
+tshark -r test/pva-beacon.pcapng.gz \
+ -X lua_script:ca.lua \
+ -PO pva \
+ 'pva'
+```
+
+Note that both decoders can be loaded simultaneously:
+
+```sh
+tshark \
+ ...
+ -X lua_script:ca.lua \
+ -X lua_script:pva.lua \
+ -PO ca,pva \
+ 'ca || pva'
+```
