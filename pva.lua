@@ -8,7 +8,7 @@
 -- Distribution and use subject to the EPICS Open License
 -- See the file LICENSE
 --
--- Revision $Id: 3b93cac5a0c481aefc530849da572cdcac713502 $
+-- Revision $Id$
 
 io.stderr:write("Loading PVA...\n")
 
