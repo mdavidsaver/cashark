@@ -10,7 +10,7 @@
 --
 -- Revision $Id$
 
-print("Loading CA...")
+io.stderr:write("Loading CA...\n")
 
 local ca = Proto("ca", "Channel Access")
 
@@ -754,4 +754,4 @@ specials = {
  [0x16] = carights
 }
 
-print("Loaded CA")
+io.stderr:write("Loaded CA\n")

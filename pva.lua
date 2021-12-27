@@ -10,7 +10,7 @@
 --
 -- Revision $Id: 3b93cac5a0c481aefc530849da572cdcac713502 $
 
-print("Loading PVA...")
+io.stderr:write("Loading PVA...\n")
 
 local pva = Proto("pva", "Process Variable Access")
 
@@ -639,4 +639,4 @@ specials_client = {
     [21] = pva_client_op_destroy,
 }
 
-print("Loaded PVA")
+io.stderr:write("Loaded PVA\n")
