@@ -60,7 +60,7 @@ local fmagic= ProtoField.uint8("pva.magic", "Magic", base.HEX)
 local fver  = ProtoField.uint8("pva.version", "Version", base.DEC)
 local fflags= ProtoField.uint8("pva.flags", "Flags", base.HEX)
 local fflag_dir = ProtoField.uint8("pva.direction", "Direction", base.HEX, {[0]="client",[1]="server"}, 0x40)
-local fflag_end = ProtoField.uint8("pva.endian", "Byte order", base.HEX, {[0]="LSB",[1]="MSG"}, 0x80)
+local fflag_end = ProtoField.uint8("pva.endian", "Byte order", base.HEX, {[0]="LSB",[1]="MSB"}, 0x80)
 local fflag_msgtype = ProtoField.uint8("pva.msg_type", "Message type", base.HEX, {[0]="Application",[1]="Control"}, 0x01)
 local fflag_segmented = ProtoField.uint8("pva.segmented", "Segmented", base.HEX, {[0]="Not segmented",[1]="First segment",[2]="Last segment",[3]="In-the-middle segment"}, 0x30)
 local fcmd  = ProtoField.uint8("pva.command", "Command", base.HEX, bcommands)
@@ -82,6 +82,11 @@ local fsubcmd_dstr = ProtoField.uint8("pva.destroy", "Destroy", base.HEX, {[0]="
 local fsubcmd_get  = ProtoField.uint8("pva.get",     "Get    ", base.HEX, {[0]="",[1]="Yes"}, 0x40)
 local fsubcmd_gtpt = ProtoField.uint8("pva.getput",  "GetPut ", base.HEX, {[0]="",[1]="Yes"}, 0x80)
 local fstatus = ProtoField.uint8("pva.status", "Status", base.HEX, stscodes)
+
+-- For BEACON
+
+local fbeacon_seq = ProtoField.uint8("pva.bseq", "Beacon sequence#")
+local fbeacon_change = ProtoField.uint16("pva.change", "Beacon change count")
 
 -- For CONNECTION_VALIDATION
 
@@ -107,6 +112,7 @@ local fsearch_found = ProtoField.bool("pva.found", "Found")
 pva.fields = {
     fmagic, fver, fflags, fflag_dir, fflag_end, fflag_msgtype, fflag_segmented, fcmd, fctrlcmd, fctrldata, fsize, fbody, fpvd, fguid,
     fcid, fsid, fioid, fsubcmd, fsubcmd_proc, fsubcmd_init, fsubcmd_dstr, fsubcmd_get, fsubcmd_gtpt, fstatus,
+    fbeacon_seq, fbeacon_change,
     fvalid_bsize, fvalid_isize, fvalid_qos, fvalid_authz,
     fsearch_seq, fsearch_addr, fsearch_port, fsearch_mask, fsearch_mask_repl, fsearch_mask_bcast,
     fsearch_proto, fsearch_cid, fsearch_name,
@@ -409,6 +415,30 @@ local function pva_client_search (buf, pkt, t, isbe, cmd)
     pkt.cols.info:append("), ")
 end
 
+local function pva_server_beacon (buf, pkt, t, isbe, cmd)
+    local seq, change, port, proto
+
+    t:add(fguid, buf(0,12))
+    if isbe then
+        seq = buf(13,1):uint()
+        change = buf(14,2):uint()
+        port = buf(32,2):uint()
+    else
+        seq = buf(13,1):le_uint()
+        change = buf(14,2):le_uint()
+        port = buf(32,2):le_uint()
+    end
+    t:add(fbeacon_seq, buf(13,1), seq)
+    t:add(fbeacon_change, buf(14,2), change)
+    t:add(fsearch_addr, buf(16,16))
+    t:add(fsearch_port, buf(32,2), port)
+
+    pkt.cols.info:append("BEACON(0x"..buf(0,12)..", "..seq..", "..change..")")
+
+    proto, buf = decodeString(buf(34), isbe)
+    t:add(fsearch_proto, proto)
+end
+
 local function pva_server_search_response (buf, pkt, t, isbe, cmd)
     local seq, port
     if isbe then
@@ -614,6 +644,7 @@ local function pva_client_op_destroy (buf, pkt, t, isbe, cmd)
 end
 
 specials_server = {
+    [0] = pva_server_beacon,
     [4] = pva_server_search_response,
     [7] = pva_server_create_channel,
     [8] = pva_destroy_channel,
