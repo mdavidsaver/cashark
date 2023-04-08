@@ -103,7 +103,7 @@ local fsearch_mask = ProtoField.uint8("pva.mask", "Mask", base.HEX)
 local fsearch_mask_repl  = ProtoField.uint8("pva.reply", "Reply", base.HEX, {[0]="Optional",[1]="Required"}, 0x01)
 local fsearch_mask_bcast = ProtoField.uint8("pva.ucast", "Reply", base.HEX, {[0]="Broadcast",[1]="Unicast"}, 0x80)
 local fsearch_proto = ProtoField.string("pva.proto", "Transport Protocol")
-local fsearch_count = ProtoField.uint16("pva.count", "Count")
+local fsearch_count = ProtoField.uint16("pva.count", "PV Count")
 local fsearch_cid = ProtoField.uint32("pva.cid", "CID")
 local fsearch_name = ProtoField.string("pva.pv", "Name")
 
@@ -396,7 +396,7 @@ local function pva_client_search (buf, pkt, t, isbe, cmd)
     else
         npv = buf(0,2):le_uint()
     end
-    t:add(fsearch_count, npv);
+    t:add(fsearch_count, buf(0,2), npv);
     if npv>0 then
         buf = buf(2)
 
