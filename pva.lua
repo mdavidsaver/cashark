@@ -288,6 +288,7 @@ utbl:add(5075, pva)
 utbl:add(5076, pva)
 local ttbl = DissectorTable.get("tcp.port")
 ttbl:add(5075, pva)
+DissectorTable.get("tls.alpn"):add("pva/1", pva)
 
 
 local function decodeSize(buf, isbe)
