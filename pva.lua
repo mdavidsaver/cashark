@@ -101,6 +101,7 @@ local fsearch_addr = ProtoField.bytes("pva.addr", "Address")
 local fsearch_port = ProtoField.uint16("pva.port", "Port")
 local fsearch_mask = ProtoField.uint8("pva.mask", "Mask", base.HEX)
 local fsearch_mask_repl  = ProtoField.uint8("pva.reply", "Reply", base.HEX, {[0]="Optional",[1]="Required"}, 0x01)
+local fsearch_mask_port  = ProtoField.uint8("pva.reply_port", "ReplySrcPort", base.HEX, {[0]="Use Field",[1]="Use Source"}, 0x02)
 local fsearch_mask_bcast = ProtoField.uint8("pva.ucast", "Reply", base.HEX, {[0]="Broadcast",[1]="Unicast"}, 0x80)
 local fsearch_proto = ProtoField.string("pva.proto", "Transport Protocol")
 local fsearch_count = ProtoField.uint16("pva.count", "PV Count")
@@ -115,7 +116,7 @@ pva.fields = {
     fcid, fsid, fioid, fsubcmd, fsubcmd_proc, fsubcmd_init, fsubcmd_dstr, fsubcmd_get, fsubcmd_gtpt, fstatus,
     fbeacon_seq, fbeacon_change,
     fvalid_bsize, fvalid_isize, fvalid_qos, fvalid_authz,
-    fsearch_seq, fsearch_addr, fsearch_port, fsearch_mask, fsearch_mask_repl, fsearch_mask_bcast,
+    fsearch_seq, fsearch_addr, fsearch_port, fsearch_mask, fsearch_mask_repl, fsearch_mask_port, fsearch_mask_bcast,
     fsearch_proto, fsearch_count, fsearch_cid, fsearch_name,
     fsearch_found,
 }
@@ -379,9 +380,13 @@ local function pva_client_search (buf, pkt, t, isbe, cmd)
     t:add(fsearch_seq, buf(0,4), seq)
     local mask = t:add(fsearch_mask, buf(4,1))
     mask:add(fsearch_mask_repl, buf(4,1))
+    mask:add(fsearch_mask_port, buf(4,1))
     mask:add(fsearch_mask_bcast, buf(4,1))
     t:add(fsearch_addr, buf(8,16))
-    t:add(fsearch_port, buf(24,2), port)
+    local f_port = t:add(fsearch_port, buf(24,2), port)
+    if bit.band(buf(4,1):uint(), 0x02) then
+        f_port:append_text(" (effective "..pkt.src_port..")")
+    end
     
     local nproto, npv
 
