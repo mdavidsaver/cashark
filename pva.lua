@@ -356,7 +356,7 @@ local function decodeStatus (buf, pkt, t, isbe)
     local message, stack
     message, buf = decodeString(buf, isbe)
     stack, buf = decodeString(buf, isbe)
-    subt:append_text(message:string())
+    subt:append_text(" "..message:string())
     if(code~=0 and stack:len()>0)
     then
       subt:add_expert_info(PI_RESPONSE_CODE, PI_WARN, stack:string())
