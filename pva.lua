@@ -290,19 +290,35 @@ local ttbl = DissectorTable.get("tcp.port")
 ttbl:add(5075, pva)
 DissectorTable.get("tls.alpn"):add("pva/1", pva)
 
+-- decode some variable length fields.
+-- Returns a value, and the trailing Tvb
+
+local function trailing(buf, n)
+    -- Can't slice a zero length tail Tvb
+    --return buf(n) -- fails if n==buf:len()
+    if n==buf:len() then
+        if n==0 then
+            return buf -- nothing left...
+        else
+            return buf(0,0) -- and zero length slice will do
+        end
+    else
+        return buf(n)
+    end
+end
 
 local function decodeSize(buf, isbe)
     local s0 = buf(0,1):uint()
     if s0==255 then
-        return 0, buf(1) -- special nil string? treat as zero
+        return 0, trailing(buf, 1) -- special nil string? treat as zero
     elseif s0==254 then
         if isbe then
-            return buf(1,4):uint(), buf(5)
+            return buf(1,4):uint(), trailing(buf, 5)
         else
-            return buf(1,4):le_uint(), buf(5)
+            return buf(1,4):le_uint(), trailing(buf, 5)
         end
     else
-        return s0, buf(1)
+        return s0, trailing(buf, 1)
     end 
 end
 
@@ -310,9 +326,9 @@ end
 local function decodeString(buf, isbe)
     local s, buf = decodeSize(buf, isbe)
     if s==buf:len() then
-        return buf(0,s), nil
+        return buf, trailing(buf, 0)
     else
-        return buf(0,s), buf(s)
+        return buf(0,s), trailing(buf, s)
     end
 end
 
