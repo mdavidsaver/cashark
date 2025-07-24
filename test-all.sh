@@ -20,7 +20,14 @@ do
   then
     echo "::error file=$(basename "$cap")::Empty output"
     ret=1
+  elif grep "Lua Error:" "$cap".out
+  then
+    echo "::error file=$(basename "$cap")::Decoder error"
+    ret=1
   fi
+  echo "::group::$cap"
+  cat "$cap".out
+  echo "::endgroup::"
 done
 
 exit $ret
