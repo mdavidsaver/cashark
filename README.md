@@ -85,7 +85,7 @@ in `test/cabeacon.cap`.
 tshark -r test/cabeacon.cap \
  -X lua_script:ca.lua \
  -PO ca \
- 'ca'
+ -Y ca
 ```
 
 And with PVA:
@@ -94,7 +94,7 @@ And with PVA:
 tshark -r test/pva-beacon.pcapng.gz \
  -X lua_script:ca.lua \
  -PO pva \
- 'pva'
+ -Y pva
 ```
 
 Note that both decoders can be loaded simultaneously:
@@ -105,5 +105,5 @@ tshark \
  -X lua_script:ca.lua \
  -X lua_script:pva.lua \
  -PO ca,pva \
- 'ca || pva'
+ -Y 'ca || pva'
 ```
